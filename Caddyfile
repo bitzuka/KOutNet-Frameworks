@@ -1,0 +1,42 @@
+koutnet.pw, www.koutnet.pw {
+        @synapse path /_matrix/* /_synapse/client/*
+        handle @synapse {
+                reverse_proxy localhost:8008
+        }
+
+        handle /.well-known/matrix/server {
+                header Content-Type application/json
+                respond `{"m.server": "koutnet.pw:443"}` 200
+        }
+
+        handle /.well-known/matrix/client {
+                header Content-Type application/json
+                header Access-Control-Allow-Origin *
+                respond `{"m.homeserver": {"base_url": "https://koutnet.pw"}}` 200
+        }
+
+        handle {
+                root * /var/www/koutnet
+                file_server
+        }
+}
+
+tasks.koutnet.pw {
+        encode gzip
+
+        handle /api/* {
+                reverse_proxy 127.0.0.1:3100
+        }
+
+        handle /data/* {
+                header Cache-Control "no-store"
+                root * /var/www/koutnet-tasks
+                file_server
+        }
+
+        handle {
+                root * /var/www/koutnet-tasks
+                try_files {path} /index.html
+                file_server
+        }
+}
