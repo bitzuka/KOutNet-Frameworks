@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>
+SPDX-License-Identifier: GPL-3.0-only
+
+-->
 # KOutNet Frameworks 
 
 this is free software for the
