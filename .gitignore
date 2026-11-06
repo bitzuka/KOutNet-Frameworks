@@ -1,0 +1,13 @@
+matrix-portable/
+
+*.key
+*.pem
+*.dump
+homeserver.db
+.env
+.env.*
+*.local
+credentials.*
+secrets.*
+
+general-web/web-chats/telegram-tt/

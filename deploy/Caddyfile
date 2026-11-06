@@ -15,8 +15,20 @@ koutnet.pw, www.koutnet.pw {
                 respond `{"m.homeserver": {"base_url": "https://koutnet.pw"}}` 200
         }
 
+        handle_path /assets/* {
+                root * /var/www/koutnet-assets
+                file_server
+        }
+
         handle {
                 root * /var/www/koutnet
+                @html path / /index.html /404.html /registration.html
+                header @html Cache-Control "no-store"
+                file_server
+        }
+
+        handle_errors {
+                rewrite * /404.html
                 file_server
         }
 }
@@ -31,6 +43,11 @@ tasks.koutnet.pw {
         handle /data/* {
                 header Cache-Control "no-store"
                 root * /var/www/koutnet-tasks
+                file_server
+        }
+
+        handle_path /assets/* {
+                root * /var/www/koutnet-assets
                 file_server
         }
 

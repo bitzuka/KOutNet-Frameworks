@@ -1,0 +1,18 @@
+version = 1
+
+SPDX-PackageName = "KOutNet Frameworks"
+SPDX-PackageSupplier = "Matvey Shcherbinin <bitzuka.koutnet@gmail.com>"
+SPDX-PackageDownloadLocation = "https://invent.kde.org/bitzuka/koutnet"
+SPDX-PackageCopyrightText = "2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>"
+
+[[annotations]]
+path = ["**"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>"
+SPDX-License-Identifier = "GPL-3.0-only"
+
+[[annotations]]
+path = ["assets/**", "**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.webp"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>"
+SPDX-License-Identifier = "LicenseRef-All-Rights-Reserved"

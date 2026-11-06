@@ -16,7 +16,7 @@
     --breeze-green: #27ae60;
     --breeze-red: #da4453;
     --breeze-card-bg: rgba(255, 255, 255, 0.82);
-    --bg-image: url("photo_2026-10-04_19-37-56.jpg");
+    --bg-image: url("../../../assets/light-back.jpg");
     --bg-opacity: 0.85;
   }
 
@@ -27,7 +27,7 @@
     --breeze-text: #eff0f1;
     --breeze-muted: #a0a5a8;
     --breeze-card-bg: rgba(30, 34, 38, 0.85);
-    --bg-image: url("back.jpg");
+    --bg-image: url("../../../assets/back.jpg");
     --bg-opacity: 0.6;
   }
 
@@ -131,9 +131,10 @@
 
   .controls-group {
     display: flex;
+    padding: 5px;
     gap: 6px;
     flex-shrink: 0;
-         position: absolute;
+     position: absolute;
     top: 15px;
     right: 15px;
   }
@@ -149,8 +150,8 @@
     display: flex;
     align-items: left;
     position: absolute; 
-     right: 15px;
     justify-content: center;
+    right: 15px;
     padding: 6px;
     transition: all 0.2s ease;
     background-color: none  ;
@@ -168,32 +169,14 @@
     display: flex;
     align-items: left;
     position: absolute; 
-    right: -15px;  
+    right: -15px; 
     justify-content: center;
     padding: 6px;
     transition: all 0.2s ease;
     background-color: none  ;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
   }
-      .icon-btn-eng {
-    width: 36px;
-    height: 32px;
-    border:0px;
-    background: none;
-    color: var(--breeze-text);
-    cursor: pointer;
-    font-size: 15px;
-    display: flex;
-    align-items: left;
-    position: absolute; 
-    bottom: 690px;
-    right: -10px; 
-    justify-content: center;
-    padding: 6px;
-    transition: all 0.2s ease;
-    background-color: none  ;
-    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-  }
+
   .icon-btn:hover {
     border-color: var(--breeze-blue);
     transform: translateY(-1px);
@@ -423,162 +406,21 @@
   .eye-btn:hover {
     opacity: 1;
   }
-
-
-  /* FULL MOBILE ADAPTATION */
-  @media (max-width: 600px) {
-    html, body { min-height: 100%; height: auto; }
-    body {
-      display: block;
-      min-height: 100svh;
-      padding: 12px 12px 24px;
-      overflow-x: hidden;
-    }
-    body::before {
-      background-position: center center;
-      background-attachment: fixed;
-    }
-    .page-wrap {
-      width: 100%;
-      max-width: 440px;
-      margin: 0 auto;
-    }
-    .global-brand {
-      position: relative;
-      width: 100%;
-      margin: 0 0 12px;
-      padding: 4px 76px 0;
-      min-height: 76px;
-      gap: 3px;
-    }
-    .global-brand img#logoImg {
-      width: min(55vw, 205px);
-      height: auto;
-      max-width: 205px;
-      margin: 0 !important;
-    }
-    .global-brand-slogan { font-size: 11px; }
-
-    /* Move the existing desktop-positioned controls into a real mobile toolbar. */
-    .icon-btn, .icon-btn-style, .icon-btn-eng {
-      position: absolute;
-      top: 8px;
-      bottom: auto;
-      right: auto;
-      width: 38px;
-      height: 38px;
-      padding: 7px;
-      border-radius: 8px;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-      z-index: 4;
-    }
-    .icon-btn { left: 8px; }
-    .icon-btn-style { right: 8px; }
-    .icon-btn img, .icon-btn-style img, .icon-btn-eng img {
-      width: 19px !important;
-      height: 19px !important;
-      object-fit: contain;
-    }
-
-    .card {
-      width: 100%;
-      margin-top: 0;
-      padding: 20px 16px 17px;
-      border-radius: 14px;
-    }
-    .top-row {
-      display: block;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-    }
-    .page-title {
-      font-size: 17px;
-      text-align: center;
-      line-height: 1.35;
-    }
-    .controls-group { display: none; }
-
-    .field { margin-bottom: 14px; }
-    .field label { font-size: 12px; margin-bottom: 6px; }
-    .field input {
-      min-height: 43px;
-      padding: 10px 11px;
-      font-size: 16px;
-      border-radius: 7px;
-    }
-    .field .hint, .field .error {
-      font-size: 10.5px;
-      line-height: 1.35;
-    }
-    .password-field input { padding-right: 44px !important; }
-    .eye-btn {
-      right: 6px;
-      width: 36px;
-      height: 36px;
-      padding: 8px;
-    }
-    .eye-btn img { width: 18px !important; height: 18px !important; }
-
-    .checkbox-row {
-      gap: 9px;
-      margin: 16px 0 18px;
-      font-size: 11.5px;
-    }
-    .checkbox-row input { width: 18px; height: 18px; }
-    .actions { width: 100%; }
-    button.btn {
-      min-height: 44px;
-      padding: 11px 18px;
-      font-size: 13.5px;
-    }
-    .status { font-size: 12px; line-height: 1.4; }
-
-    .links-footer {
-      margin-top: 18px;
-      padding-top: 13px;
-      gap: 7px;
-    }
-    .link-badge { border-radius: 6px; }
-    .link-badge img {
-      width: auto;
-      height: 34px;
-      max-width: 62px;
-      object-fit: contain;
-    }
-    .success-view { padding: 8px 0; }
-    .success-view .mxid {
-      max-width: 100%;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-  }
-
-  @media (max-width: 380px) {
-    body { padding: 8px 8px 18px; }
-    .global-brand { padding-left: 64px; padding-right: 64px; min-height: 70px; }
-    .global-brand img#logoImg { width: min(52vw, 185px); }
-    .icon-btn, .icon-btn-style { width: 35px; height: 35px; }
-    .card { padding-left: 13px; padding-right: 13px; }
-    .page-title { font-size: 16px; }
-    .link-badge img { height: 31px; max-width: 58px; }
-  }
-
-
 </style>
 </head>
 <body>
   <div class="page-wrap">
     <div class="global-brand">
-        <img src="logo.png" alt="KOutNet" id="logoImg" style="margin-top:50px;">
-       
+        <img src="../../../assets/logo.png" alt="KOutNet" id="logoImg" style="margin-top:50px;">
+
     <div class="card">
       <div class="top-row">
         <h1 class="page-title" data-i18n="title">Создание учётной записи Matrix</h1>
         <div class="controls-group">
-          <button type="button" class="icon-btn-style" id="themeToggle" title="Тема"><img src="moon.png" alt="Тема"></button>
-          <button type="button" class="icon-btn" id="langToggle" title="Язык"><b style="font-size: 16px;">RU</b></button>
+          <button class="icon-btn-style" id="themeToggle" title="Тёмная / Светлая тема">
+            <img src="../../../assets/moon.png" alt="Тёмная" style="width:18px;height:18px;">
+          </button>
+          <button class="icon-btn" id="langToggle" title="Сменить язык"><b style="font-size: 16px;">RU</b></button>
         </div>
       </div>
 
@@ -596,7 +438,7 @@
             <div class="password-field">
               <input id="password" type="password" autocomplete="new-password" data-i18n-placeholder="passwordPh" placeholder="Не менее 8 символов">
                 <button type="button" class="eye-btn" aria-label="Показать пароль">
-                <img src="glazz.png" alt="Показать" style="width:16px;height:16px;">
+                <img src="../../../assets/glazz.png" alt="Показать" style="width:16px;height:16px;">
              </button>               
             </div>
             <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
@@ -607,7 +449,7 @@
             <label for="confirm" data-i18n="confirmLabel">Подтверждение пароля</label>
             <div class="password-field">
               <input id="confirm" type="password" autocomplete="new-password" data-i18n-placeholder="confirmPh" placeholder="Повторите пароль">
-              <button type="button" class="eye-btn" aria-label="Показать пароль"><img src="glazz.png" alt="Показать пароль" style="width:18px;height:18px;"></button>
+              <button type="button" class="eye-btn" aria-label="Показать пароль"><img src="../../../assets/glazz.png" alt="Показать пароль" style="width:18px;height:18px;"></button>
             </div>
           <div class="error" data-i18n="confirmError">Пароли не совпадают</div>
           </div>
@@ -636,25 +478,25 @@
         <p data-i18n="successText">Ваш Matrix ID готов к использованию:</p>
         <div class="mxid" id="mxidOut">@username:koutnet.pw</div>
         <div class="actions" style="justify-content:center;margin-top:18px;">
-          <button class="btn btn-primary" style="width:auto;" data-i18n="doneBtn" onclick="location.href='https://tasks.koutnet.pw/start'">Готово</button>
+          <button class="btn btn-primary" style="width:auto;" data-i18n="doneBtn" onclick="location.href='https://tasks.koutnet.pw/forum'">Готово</button>
         </div>
       </div>
 
       <div class="links-footer">
         <a class="link-badge" href="https://invent.kde.org/bitzuka/koutnetwork" target="_blank" rel="noopener" title="GitLab">
-          <img src="icon-invent.png" alt="GitLab">
+          <img src="../../../assets/icon-invent.png" alt="GitLab">
         </a>
         <a class="link-badge" href="https://t.me/KOutNet" target="_blank" rel="noopener" title="KOutNet Community">
-          <img src="icon-tg-channel.png" alt="KOutNet Community">
+          <img src="../../../assets/icon-tg-channel.png" alt="KOutNet Community">
         </a>
         <a class="link-badge" href="https://invent.kde.org/bitzuka/koutnetwork/-/issues" target="_blank" rel="noopener" title="Bug Report">
-          <img src="icon-issues.png" alt="Bug Report">
+          <img src="../../../assets/icon-issues.png" alt="Bug Report">
         </a>
         <a class="link-badge" href="https://t.me/bitzuka" target="_blank" rel="noopener" title="Text me">
-          <img src="icon-tg-personal.png" alt="Text me">
+          <img src="../../../assets/icon-tg-personal.png" alt="Text me">
         </a>
         <a class="link-badge" href="https://donatepay.ru/don/1536509" target="_blank" rel="noopener" title="Donate">
-          <img src="icon-donate.png" alt="Donate">
+          <img src="../../../assets/icon-donate.png" alt="Donate">
         </a>
       </div>
     </div>
@@ -752,16 +594,16 @@ document.getElementById('langToggle').addEventListener('click', () => {
   const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.body.classList.add('dark-theme');
-        themeToggleBtn.innerHTML = '<img src="sun.png" alt="Светлая" style="width:18px;height:18px;">';
+        themeToggleBtn.innerHTML = '<img src="../../../assets/sun.png" alt="Светлая" style="width:18px;height:18px;">';
         } else {
      document.body.classList.remove('dark-theme');
-     themeToggleBtn.innerHTML = '<img src="moon.png" alt="Тёмная" style="width:18px;height:18px;">';
+     themeToggleBtn.innerHTML = '<img src="../../../assets/moon.png" alt="Тёмная" style="width:18px;height:18px;">';
     }
 }
 
   themeToggleBtn.addEventListener('click', () => {
     const isDark = document.body.classList.toggle('dark-theme');
-    themeToggleBtn.innerHTML = isDark ? '<img src="sun.png" alt="Светлая тема" style="width:18px;height:18px;">' : '<img src="moon.png" alt="Тёмная тема" style="width:18px;height:18px;">';
+    themeToggleBtn.innerHTML = isDark ? '<img src="../../../assets/sun.png" alt="Светлая тема" style="width:18px;height:18px;">' : '<img src="../../../assets/moon.png" alt="Тёмная тема" style="width:18px;height:18px;">';
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   });
 
@@ -782,8 +624,8 @@ document.querySelectorAll('.eye-btn').forEach(button => {
     input.type = isPassword ? 'text' : 'password';
     
     button.innerHTML = isPassword 
-      ? '<img src="glaz.png" alt="Скрыть" style="width:18px;height:18px;">' 
-      : '<img src="glazz.png" alt="Показать" style="width:18px;height:18px;">';
+      ? '<img src="../../../assets/glaz.png" alt="Скрыть" style="width:18px;height:18px;">' 
+      : '<img src="../../../assets/glazz.png" alt="Показать" style="width:18px;height:18px;">';
       
     input.focus();
   });

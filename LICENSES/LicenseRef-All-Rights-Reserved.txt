@@ -1,0 +1,7 @@
+# All rights reserved. Not freely licensed, placeholder until
+# the author decides the public license for the assets.
+
+Copyright (c) 2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>
+
+All rights reserved. No part of these files may be reproduced, distributed
+or used without the prior written permission of the copyright holder.
