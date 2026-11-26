@@ -21,11 +21,15 @@ and etc..
 ## Whats inside??
 
 - **assets/..** - assets, icons
+- **deploy/..** - server configs, Caddyfile
 - **general-web/..** - all web things
 - **general-web/main-web/..** - homepage
+- **general-web/sp/..** - posts site
 - **general-web/tasks/..** - website 
 - **general-web/web-chats/..** - fork of element to multiprotocol
 - **telegram-bots/..** - telegram bots for KOutNet
+- **LICENSES/..** - license texts
+- **AI_POLICY.md** - rules for using AI in the project
 
 > thats for now. in future may be bigger
 
