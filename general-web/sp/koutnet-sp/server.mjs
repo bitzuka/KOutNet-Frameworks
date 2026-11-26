@@ -357,7 +357,14 @@ createServer(async (req, res) => {
 
     if (p === '/api/auth/logout' && req.method === 'POST') {
       const m = /^Bearer (.+)$/.exec(req.headers.authorization ?? '');
-      if (m) writeSessions(readSessions().filter((s) => s.tokenHash !== hash(m[1])));
+      if (m) {
+        const th = hash(m[1]);
+        const session = readSessions().find((s) => s.tokenHash === th && s.expires > Date.now());
+        writeSessions(readSessions().filter((s) => s.tokenHash !== th));
+        // Accounts are shared with Tasks: end that session too, so logging in
+        // again actually asks for the password instead of silently re-entering.
+        if (session) await bridgeRequest('/api/sp/logout', 'POST', { userId: session.userId });
+      }
       return send(res, 200, { ok: true });
     }
 

@@ -478,6 +478,22 @@ function userLink(username, label, flags = {}) {
   return wrap;
 }
 
+
+async function logout() {
+  try { await api('/api/auth/logout', { method: 'POST' }); }
+  catch (e) { toast('Не удалось завершить сессию на сервере: ' + e.message); }
+  token = '';
+  me = null;
+  currentProfile = null;
+  profileEditing = false;
+  localStorage.removeItem(KEY);
+  $('#loginBox').classList.remove('hidden');
+  $('#layout').classList.add('hidden');
+  $('#loginLink').href = TASKS + '/sp-login.html?back=' + encodeURIComponent(location.origin + '/');
+  renderUser();
+  history.replaceState({}, '', '/');
+}
+
 function renderUser() {
   const box = $('#userBox');
   box.replaceChildren();
@@ -509,19 +525,15 @@ function renderUser() {
     meBtn.onclick = () => showProfile(me.username);
     box.append(meBtn);
     const out = el('button', '', 'Выйти');
-    out.onclick = async () => {
-      try { await api('/api/auth/logout', { method: 'POST' }); } catch (_) { /* ignore */ }
-      token = '';
-      me = null;
-      localStorage.removeItem(KEY);
-      renderUser();
-      setTab('feed');
-    };
+    out.onclick = logout;
     box.append(out);
   } else {
     const link = el('a', 'button-link', 'Войти через Tasks');
     link.href = TASKS + '/sp-login.html?back=' + encodeURIComponent(location.origin + location.pathname);
     box.append(link);
+    const reg = el('a', 'button-link', 'Регистрация');
+    reg.href = 'https://koutnet.pw/koutnet-registration.html';
+    box.append(reg);
   }
 }
 
@@ -1169,6 +1181,10 @@ function renderProfile(p) {
     const editBtn = el('button', 'banner-edit', profileEditing ? 'Закрыть' : 'Изменить профиль');
     editBtn.onclick = () => { profileEditing = !profileEditing; renderProfile(p); };
     banner.append(editBtn);
+    const outBtn = el('button', 'banner-edit banner-logout', 'выйти');
+    outBtn.title = 'Выйти из аккаунта';
+    outBtn.onclick = logout;
+    banner.append(outBtn);
   }
   const bannerName = el('div', 'banner-name');
   bannerName.append(nameNode(p));
