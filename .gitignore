@@ -1,12 +1,22 @@
 # SPDX-FileCopyrightText: 2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Local Matrix/Synapse runtime bundles and their secrets
 matrix-portable/
+**/matrix-synapse/**/database.yaml
+**/*signing.key
 
+# Keys, credentials and local data dumps must never be committed
 *.key
 *.pem
+*.p12
+*.pfx
+*.ppk
+id_rsa*
 *.dump
-homeserver.db
+*.db
+*.sqlite
+*.sqlite3
 .env
 .env.*
 *.local

@@ -60,3 +60,19 @@ tasks.koutnet.pw {
                 file_server
         }
 }
+
+# SP: щитпосты, общий аккаунт с Tasks.
+sp.koutnet.pw {
+        encode gzip
+
+        handle /api/* {
+                reverse_proxy 127.0.0.1:3101
+        }
+
+        handle {
+                root * /opt/koutnet-sp/public
+                try_files {path} /index.html
+                header Cache-Control "no-store"
+                file_server
+        }
+}

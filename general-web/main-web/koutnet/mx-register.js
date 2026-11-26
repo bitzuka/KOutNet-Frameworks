@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 (function () {
   'use strict';
 

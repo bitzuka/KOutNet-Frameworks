@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SP — KOutNet</title>
+  <link rel="stylesheet" href="/styles.css?v=noreactions">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><a href="/" id="brandLink" title="SP"><img src="/brand.webp" alt="SP"><img src="/brand2.webp" alt="KOutNet"></a></div>
+    <nav>
+      <a href="/" data-tab="feed">Лента</a>
+      <a href="/profile" data-tab="profile">Профиль</a>
+      <a href="https://tasks.koutnet.pw/" data-external>задачи</a>
+    </nav>
+    <div class="controls" id="userBox"></div>
+  </header>
+
+  <main>
+    <section id="loginBox" class="panel hidden">
+      <h1>Щитпосты</h1>
+      <p class="muted">Вход через аккаунт Tasks — аккаунт и активность общие.</p>
+      <a class="btn-primary button-link" id="loginLink" href="#">Войти через Tasks</a>
+    </section>
+
+    <div class="layout" id="layout">
+      <section class="col-main" id="feedPane">
+        <form id="composer" class="panel">
+          <label class="field">
+            <span>Новый пост <span class="muted small">до 500 символов</span></span>
+            <textarea id="postText" maxlength="500" rows="3" placeholder="представь что ты безумный ученый и напиши свой пост"></textarea>
+          </label>
+          <div class="md-toolbar" aria-label="Форматирование">
+            <button type="button" data-md="bold" title="Жирный: **текст**">жирный</button>
+            <button type="button" data-md="italic" title="Курсив: *текст*">курсив</button>
+            <button type="button" data-md="code" title="Код: `текст` или блок кода">код</button>
+            <button type="button" data-md="link" title="Ссылка: [текст](https://...)">ссылка</button>
+            <button type="button" data-md="quote" title="Цитата: > текст">цитата</button>
+            <button type="button" data-md="list" title="Список: - пункт">список</button>
+            <span class="muted small">посты поддерживают markdown!</span>
+          </div>
+          <div class="composer-row">
+            <label class="button-link file-label">
+              <span id="fileLabel">Прикрепить картинку</span>
+              <input type="file" id="postImage" accept="image/*" hidden>
+            </label>
+            <button type="button" id="clearImage" class="hidden">Убрать картинку</button>
+            <span class="counter muted small" id="counter">0 / 500</span>
+            <button type="submit" id="postSubmit" class="btn-primary" disabled>Опубликовать</button>
+          </div>
+          <img id="imagePreview" class="preview hidden" alt="Предпросмотр">
+        </form>
+        <div id="posts" class="feed"><p class="empty">Загрузка ленты…</p></div>
+      </section>
+
+      <section class="col-profile hidden" id="profilePane">
+        <div id="profile"><p class="empty">Загрузка профиля…</p></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="appearance" class="appearance hidden" role="dialog" aria-label="оформление">
+    <div class="appearance-box panel">
+      <button type="button" id="appearanceClose" class="appearance-close" title="Закрыть">×</button>
+      <h2>оформление</h2>
+
+      <label class="field">
+        <span>свои обои (файл)</span>
+        <input type="file" id="wallpaperFile" accept="image/*">
+      </label>
+      <div class="wallpaper-preview" id="wallpaperPreview"></div>
+      <div class="appearance-row">
+        <button type="button" id="wallpaperRemove">убрать обои</button>
+      </div>
+
+      <label class="field">
+        <span>или url фона</span>
+        <input type="url" id="wallpaperUrl" placeholder="https://...">
+      </label>
+      <div class="appearance-row">
+        <button type="button" id="wallpaperUrlApply">применить url</button>
+      </div>
+
+      <label class="check"><input type="checkbox" id="autoColors" checked> подстраивать цвета под фон</label>
+
+      <div class="color-grid">
+        <label>фон <input type="color" data-color="bg"></label>
+        <label>текст <input type="color" data-color="fg"></label>
+        <label>карточки <input type="color" data-color="card"></label>
+        <label>граница <input type="color" data-color="border"></label>
+        <label>акцент <input type="color" data-color="accent"></label>
+        <label>текст на акценте <input type="color" data-color="accent-fg"></label>
+      </div>
+
+      <div class="appearance-row">
+        <button type="button" id="appearanceReset">сбросить</button>
+      </div>
+      <p class="muted small" id="appearanceHint">всё хранится только в этом браузере</p>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/vendor/markdown-it.min.js"></script>
+  <script src="/vendor/markdown-it-task-lists.min.js"></script>
+  <script src="/vendor/markdown-it-footnote.min.js"></script>
+  <script src="/vendor/markdown-it-emoji.min.js"></script>
+  <script src="/vendor/markdown-it-anchor.umd.js"></script>
+  <script src="/vendor/markdown-it-container.min.js"></script>
+  <script src="/vendor/highlight.min.js"></script>
+  <script src="/vendor/purify.min.js"></script>
+  <script src="/app.js?v=noreactions"></script>
+</body>
+</html>
