@@ -866,6 +866,15 @@ function makeComment(c, all, onReply, onLike, onDelete) {
   const time = el('span', 'muted small', formatTime(c.createdAt, true));
   time.dateTime = c.createdAt;
   head.append(time);
+  const av = avatar({ avatarUrl: '', displayName: c.author || c.username || '?', username: c.username || '' }, 'avatar-fallback');
+  head.prepend(av);
+  // Comments from Tasks carry no avatar, so take it from the cached profile.
+  if (c.username) {
+    cachedProfileCard(c.username).then((p) => {
+      if (!box.isConnected || !p) return;
+      av.replaceWith(avatar(p, p.avatarUrl ? 'avatar-sm' : 'avatar-fallback'));
+    });
+  }
   box.append(head);
 
   if (c.parentId) {
@@ -1322,7 +1331,9 @@ function renderProfile(p) {
     panel.append(el('p', 'muted', 'Пока нет засчитанных задач. Решённые задачи отмечает администратор.'));
   }
   host.append(panel);
-  if (own) renderProfilePosts(p);
+  // Posts are public in the feed, so they must be visible on any profile,
+  // not only on your own (a user may have zero solved tasks).
+  renderProfilePosts(p);
 }
 
 function renderProfilePosts(p) {
