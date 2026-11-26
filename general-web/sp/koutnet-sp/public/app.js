@@ -10,6 +10,7 @@ let profilePostsSeq = 0;
 let profileEditing = false;
 let md = null;
 const profileCardCache = new Map();
+let activeHoverCard = null;
 const LOOK_KEY = 'koutnet_sp_look';
 let look = loadLook();
 
@@ -390,6 +391,33 @@ function avatar(p, cls) {
   return el('span', cls, (p.displayName || p.username || '?').charAt(0).toUpperCase());
 }
 
+function closeHoverCard() {
+  if (!activeHoverCard) return;
+  activeHoverCard.remove();
+  activeHoverCard = null;
+}
+
+// The card lives directly under body, so no post/comment stacking context or
+// overflow can hide it behind the next post in the feed.
+function placeHoverCard(card, anchor) {
+  const rect = anchor.getBoundingClientRect();
+  const width = card.offsetWidth;
+  const height = card.offsetHeight;
+  let left = rect.left;
+  if (left + width > window.innerWidth - 12) left = rect.right - width;
+  left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
+  let top = rect.bottom + 6;
+  if (top + height > window.innerHeight - 12) {
+    const above = rect.top - height - 6;
+    top = above >= 12 ? above : Math.max(12, window.innerHeight - height - 12);
+  }
+  card.style.left = left + 'px';
+  card.style.top = top + 'px';
+}
+
+window.addEventListener('scroll', closeHoverCard, true);
+window.addEventListener('resize', closeHoverCard);
+
 function cachedProfileCard(username) {
   const key = String(username).toLowerCase();
   if (!profileCardCache.has(key)) {
@@ -463,18 +491,18 @@ function userLink(username, label, flags = {}) {
     wanted = true;
     timer = setTimeout(async () => {
       if (!wanted) return;
-      if (!card) {
+      if (!card || !card.isConnected) {
         const p = await cachedProfileCard(username);
         if (!wanted || !p) return;
+        closeHoverCard();
         card = makeHoverCard(p);
-        wrap.append(card);
-        const rect = wrap.getBoundingClientRect();
-        if (rect.left + 300 > window.innerWidth - 12) {
-          card.style.left = 'auto';
-          card.style.right = '0';
-        }
+        activeHoverCard = card;
+        document.body.append(card);
+        card.classList.remove('hidden');
+        placeHoverCard(card, wrap);
       } else {
         card.classList.remove('hidden');
+        placeHoverCard(card, wrap);
       }
     }, 250);
   });
@@ -482,12 +510,12 @@ function userLink(username, label, flags = {}) {
   wrap.addEventListener('mouseleave', () => {
     clearTimeout(timer);
     wanted = false;
-    if (card) card.classList.add('hidden');
+    if (card && activeHoverCard === card) closeHoverCard();
+    card = null;
   });
 
   return wrap;
 }
-
 
 async function logout() {
   try { await api('/api/auth/logout', { method: 'POST' }); }
@@ -548,6 +576,7 @@ function renderUser() {
 }
 
 function setTab(name, username) {
+  closeHoverCard();
   const profile = name === 'profile';
   $('#feedPane').classList.toggle('hidden', profile);
   $('#profilePane').classList.toggle('hidden', !profile);
@@ -1113,6 +1142,7 @@ function makePost(p) {
 }
 
 async function loadPosts() {
+  closeHoverCard();
   const host = $('#posts');
   try {
     const list = await api('/api/posts?limit=50');
@@ -1173,6 +1203,7 @@ function isOwn(p) {
 }
 
 function renderProfile(p) {
+  closeHoverCard();
   const host = $('#profile');
   currentProfile = p;
   host.replaceChildren();

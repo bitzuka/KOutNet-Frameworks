@@ -312,7 +312,7 @@ html[data-theme="dark"] .hljs-selector-class { color: #bc8cff; }
 .ul { position: relative; display: inline-block; }
 .ul-name { color: var(--fg); }
 .ul-name:hover { color: var(--accent); text-decoration: none; }
-.hovercard { position: absolute; left: 0; top: 100%; z-index: 60; width: 300px; max-width: calc(100vw - 24px); padding-top: 6px; }
+.hovercard { position: fixed; left: 0; top: 0; z-index: 150; width: 300px; max-width: calc(100vw - 24px); padding-top: 6px; }
 .hc-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
 .hc-banner { position: relative; height: 120px; background: var(--border); }
 .hc-banner-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
