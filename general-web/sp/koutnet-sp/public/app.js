@@ -3,7 +3,10 @@ const KEY = 'koutnet_sp_token';
 let token = localStorage.getItem(KEY) || '';
 let me = null;
 let pendingImage = '';
-let profileYear = new Date().getUTCFullYear();
+let profileYear = new Date().getFullYear();
+let profileYearAuto = true;
+let currentProfile = null;
+let profilePostsSeq = 0;
 let profileEditing = false;
 let md = null;
 const profileCardCache = new Map();
@@ -29,6 +32,7 @@ function toast(message) {
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (token) headers.Authorization = 'Bearer ' + token;
+  headers['X-SP-Viewer'] = viewerId();
   let body;
   if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json';
@@ -364,7 +368,6 @@ function verifiedIcon() {
 function nameNode(p, cls) {
   const n = el('strong', cls || '', p.displayName || p.username);
   if (p.verified) n.append(verifiedIcon());
-  if (p.adm) n.append(el('span', 'adm-tag', 'adm'));
   return n;
 }
 function avatar(p, cls) {
@@ -404,7 +407,6 @@ function makeHoverCard(p) {
   const nameBox = el('div', 'hc-name');
   const strong = el('strong', '', p.displayName || p.username);
   if (p.verified) strong.append(verifiedIcon());
-  if (p.adm) strong.append(el('span', 'adm-tag', 'adm'));
   nameBox.append(strong);
   nameBox.append(el('span', 'hc-nick', '@' + p.username));
   banner.append(nameBox);
@@ -726,7 +728,81 @@ function short(s) {
   return s.length > 140 ? s.slice(0, 140) + '...' : s;
 }
 
-function makeComment(c, all, onReply) {
+const LIKE_ICON = '/like.png?v=likes1';
+const DISLIKE_ICON = '/dislike.png?v=reactions1';
+const TRASH_ICON = '/trash.png?v=reactions1';
+const VIEWER_KEY = 'koutnet_sp_viewer';
+function icon(url, cls) {
+  const img = el('img', cls, '');
+  img.src = url;
+  img.alt = '';
+  return img;
+}
+function likeIcon() { return icon(LIKE_ICON, 'like-icon'); }
+function dislikeIcon() { return icon(DISLIKE_ICON, 'like-icon'); }
+function trashIcon() { return icon(TRASH_ICON, 'delete-icon'); }
+function eyeIcon() {
+  const s = el('span', 'eye-icon');
+  s.innerHTML = typeof EYE_SVG === 'string' ? EYE_SVG : '';
+  return s;
+}
+function viewerId() {
+  let v = localStorage.getItem(VIEWER_KEY);
+  if (!v || !/^[A-Za-z0-9_-]{16,80}$/.test(v)) {
+    v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2))
+      .replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
+    localStorage.setItem(VIEWER_KEY, v);
+  }
+  return v;
+}
+function likeContent(btn, c) {
+  btn.replaceChildren(likeIcon(), document.createTextNode(' ' + (c.likeCount ?? 0)));
+}
+function dislikeContent(btn, c) {
+  btn.replaceChildren(dislikeIcon(), document.createTextNode(' ' + (c.dislikeCount ?? 0)));
+}
+function trashButton(title, onclick) {
+  const b = el('button', 'link-btn delete-btn', '');
+  b.append(trashIcon(), document.createTextNode(' удалить'));
+  b.title = title;
+  b.onclick = onclick;
+  return b;
+}
+
+const countedViews = new Set();
+const viewObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting || entry.intersectionRatio < 0.6) continue;
+    if (document.visibilityState !== 'visible') continue;
+    const node = entry.target;
+    viewObserver.unobserve(node);
+    const id = node.dataset.viewPost;
+    if (!id || countedViews.has(id)) continue;
+    countedViews.add(id);
+    api('/api/posts/' + encodeURIComponent(id) + '/view', { method: 'POST' })
+      .then((r) => {
+        const num = node.querySelector('[data-view-count]');
+        if (num) num.textContent = String(r.views);
+      })
+      .catch(() => { countedViews.delete(id); });
+  }
+}, { threshold: [0.6] }) : null;
+function registerPostView(node, id) {
+  node.dataset.viewPost = id;
+  if (viewObserver) viewObserver.observe(node);
+  else setTimeout(() => {
+    if (countedViews.has(id)) return;
+    countedViews.add(id);
+    api('/api/posts/' + encodeURIComponent(id) + '/view', { method: 'POST' })
+      .then((r) => {
+        const num = node.querySelector('[data-view-count]');
+        if (num) num.textContent = String(r.views);
+      })
+      .catch(() => { countedViews.delete(id); });
+  }, 900);
+}
+
+function makeComment(c, all, onReply, onLike, onDelete) {
   const box = el('div', 'comment' + (c.kind === 'apply' ? ' apply' : ''));
   const head = el('div', 'comment-head');
   if (c.username) {
@@ -754,12 +830,19 @@ function makeComment(c, all, onReply) {
   const foot = el('div', 'comment-foot');
   const reply = el('button', 'link-btn', 'Ответить');
   reply.onclick = () => onReply(c);
-  foot.append(reply);
+  const like = el('button', 'link-btn like-btn' + (c.likedByMe ? ' liked' : ''), '');
+  likeContent(like, c);
+  like.title = c.likedByMe ? 'Убрать лайк' : 'Поставить лайк';
+  like.onclick = () => onLike(c, like);
+  foot.append(reply, like);
+  if (onDelete && me && c.userId && c.userId === me.id) {
+    foot.append(trashButton('Удалить свой комментарий', () => onDelete(c)));
+  }
   box.append(foot);
   return box;
 }
 
-async function loadComments(postId, box, btn) {
+async function loadComments(postId, box, btn, onLikeChanged) {
   try {
     const all = await api('/api/posts/' + encodeURIComponent(postId) + '/comments');
     box.replaceChildren();
@@ -777,6 +860,30 @@ async function loadComments(postId, box, btn) {
           replyTo = target;
           renderForm();
           if (inputEl) inputEl.focus();
+        }, (target, likeBtn) => {
+          if (!me) return toast('Сначала войдите через Tasks.');
+          likeBtn.disabled = true;
+          api('/api/posts/' + encodeURIComponent(postId) + '/comments/' +
+              encodeURIComponent(target.id) + '/like', { method: 'POST' })
+            .then((r) => {
+              target.likeCount = r.comment.likeCount;
+              target.likedByMe = r.comment.likedByMe;
+              likeContent(likeBtn, target);
+              likeBtn.classList.toggle('liked', target.likedByMe);
+              likeBtn.title = target.likedByMe ? 'Убрать лайк' : 'Поставить лайк';
+              if (onLikeChanged) onLikeChanged(r.highlight, r.count);
+            })
+            .catch((e) => toast(e.message))
+            .finally(() => { likeBtn.disabled = false; });
+        }, (target) => {
+          if (!confirm('Удалить ваш комментарий?')) return;
+          api('/api/posts/' + encodeURIComponent(postId) + '/comments/' +
+              encodeURIComponent(target.id), { method: 'DELETE' })
+            .then((r) => {
+              if (onLikeChanged) onLikeChanged(r.highlight, r.count);
+              return loadComments(postId, box, btn, onLikeChanged);
+            })
+            .catch((e) => toast(e.message));
         }));
       }
     }
@@ -797,7 +904,7 @@ async function loadComments(postId, box, btn) {
       const input = el('textarea', '');
       inputEl = input;
       input.rows = 3;
-      input.maxLength = 2000;
+      input.maxLength = 250;
       input.placeholder = 'Ваш комментарий';
       form.append(input);
       const err = el('p', 'form-error', '');
@@ -838,8 +945,7 @@ function makePost(p) {
     a.onclick = () => showProfile(p.author.username);
     head.append(a);
     head.append(userLink(p.author.username, p.author.displayName || p.author.username, {
-      verified: p.author.verified,
-      adm: p.author.adm
+      verified: p.author.verified
     }));
     head.append(el('span', 'muted small', '@' + p.author.username));
   } else {
@@ -863,19 +969,124 @@ function makePost(p) {
 
   const foot = el('div', 'post-foot');
   const toggle = el('button', 'link-btn', 'Комментарии (' + (p.commentCount ?? 0) + ')');
+
+  const like = el('button', 'link-btn reaction-btn like-btn' + (p.likedByMe ? ' liked' : ''), '');
+  likeContent(like, p);
+  like.title = p.likedByMe ? 'Убрать лайк' : 'Поставить лайк';
+  like.onclick = () => {
+    if (!me) return toast('Сначала войдите через Tasks.');
+    like.disabled = true;
+    api('/api/posts/' + encodeURIComponent(p.id) + '/like', { method: 'POST' })
+      .then((r) => { Object.assign(p, r); applyReactions(); })
+      .catch((e) => toast(e.message))
+      .finally(() => { like.disabled = false; });
+  };
+  const dislike = el('button', 'link-btn reaction-btn dislike-btn' + (p.dislikedByMe ? ' disliked' : ''), '');
+  dislikeContent(dislike, p);
+  dislike.title = p.dislikedByMe ? 'Убрать дизлайк' : 'Поставить дизлайк';
+  dislike.onclick = () => {
+    if (!me) return toast('Сначала войдите через Tasks.');
+    dislike.disabled = true;
+    api('/api/posts/' + encodeURIComponent(p.id) + '/dislike', { method: 'POST' })
+      .then((r) => { Object.assign(p, r); applyReactions(); })
+      .catch((e) => toast(e.message))
+      .finally(() => { dislike.disabled = false; });
+  };
+  const applyReactions = () => {
+    likeContent(like, p);
+    dislikeContent(dislike, p);
+    like.classList.toggle('liked', !!p.likedByMe);
+    dislike.classList.toggle('disliked', !!p.dislikedByMe);
+    like.title = p.likedByMe ? 'Убрать лайк' : 'Поставить лайк';
+    dislike.title = p.dislikedByMe ? 'Убрать дизлайк' : 'Поставить дизлайк';
+  };
+  const views = el('span', 'views-count');
+  const viewsNum = el('span', 'views-num', String(p.views ?? 0));
+  viewsNum.dataset.viewCount = p.id;
+  views.append(eyeIcon(), viewsNum);
+  views.title = 'Просмотры';
+  const actions = el('div', 'post-actions');
+  actions.append(like, dislike, views);
+
   const comments = el('div', 'comments-box hidden');
+  const highlight = el('div', 'post-highlight hidden');
+  let highlightData = p.commentHighlight || null;
   let loaded = false;
+
+  const renderHighlight = () => {
+    if (!highlightData || !comments.classList.contains('hidden')) {
+      highlight.classList.add('hidden');
+      highlight.replaceChildren();
+      return;
+    }
+    highlight.classList.remove('hidden');
+    highlight.title = highlightData.likeCount
+      ? 'Самый залайкнутый комментарий' : 'Самый свежий комментарий';
+    const who = el('span', 'post-highlight-who');
+    who.append(avatar({
+      avatarUrl: highlightData.avatarUrl,
+      displayName: highlightData.author,
+      username: highlightData.username
+    }, highlightData.avatarUrl ? 'avatar-sm' : 'avatar-fallback'));
+    who.append(userLink(highlightData.username, highlightData.author || highlightData.username, {
+      verified: !!highlightData.verified,
+      adm: !!highlightData.adm
+    }));
+    const text = el('span', 'post-highlight-text', highlightData.text);
+    const likes = el('button', 'link-btn like-btn post-highlight-likes' +
+      (highlightData.likedByMe ? ' liked' : ''), '');
+    likeContent(likes, highlightData);
+    likes.title = highlightData.likedByMe ? 'Убрать лайк' : 'Поставить лайк';
+    likes.onclick = (e) => {
+      e.stopPropagation();
+      if (!me) return toast('Сначала войдите через Tasks.');
+      likes.disabled = true;
+      api('/api/posts/' + encodeURIComponent(p.id) + '/comments/' +
+          encodeURIComponent(highlightData.id) + '/like', { method: 'POST' })
+        .then((r) => {
+          setHighlight(r.highlight);
+          toggle.textContent = 'Комментарии (' + r.count + ')';
+        })
+        .catch((e) => toast(e.message))
+        .finally(() => { likes.disabled = false; });
+    };
+    highlight.replaceChildren(who, text, likes);
+  };
+  const setHighlight = (h) => {
+    highlightData = h || null;
+    renderHighlight();
+  };
+  renderHighlight();
+
   toggle.onclick = () => {
     const opening = comments.classList.contains('hidden');
     comments.classList.toggle('hidden', !opening);
+    renderHighlight();
     if (opening && !loaded) {
       loaded = true;
-      loadComments(p.id, comments, toggle);
+      loadComments(p.id, comments, toggle, (h, count) => {
+        setHighlight(h);
+        toggle.textContent = 'Комментарии (' + count + ')';
+      });
     }
   };
-  foot.append(toggle);
-  box.append(foot);
-  box.append(comments);
+  highlight.onclick = (e) => {
+    if (e.target.closest && e.target.closest('a, button')) return;
+    if (comments.classList.contains('hidden')) toggle.click();
+  };
+  foot.append(toggle, actions);
+  if (p.ownedByMe) {
+    actions.append(trashButton('Удалить свой пост', () => {
+      if (!confirm('Удалить ваш пост?')) return;
+      const btn = actions.querySelector('.delete-btn');
+      if (btn) btn.disabled = true;
+      api('/api/posts/' + encodeURIComponent(p.id), { method: 'DELETE' })
+        .then(() => { box.remove(); toast('Пост удалён.'); })
+        .catch((e) => { toast(e.message); if (btn) btn.disabled = false; });
+    }));
+  }
+  box.append(foot, highlight, comments);
+  registerPostView(box, p.id);
   return box;
 }
 
@@ -892,26 +1103,47 @@ async function loadPosts() {
 }
 
 // ---- profile and activity: tasks markup, tasks data ----
+function localDateKey(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
 function calendarCells(p, y) {
-  const DAY = 86400000;
   const cal = p.calendar || {};
-  const start = Date.UTC(y, 0, 1);
-  const end = Date.UTC(y, 11, 31);
+  const DAY = 86400000;
   const now = new Date();
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const offset = (new Date(start).getUTCDay() + 6) % 7;
-  const days = Math.round((end - start) / DAY) + 1;
-  const total = Math.ceil((offset + days) / 7) * 7;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const ru = (document.documentElement.lang || navigator.language || 'ru').toLowerCase().startsWith('ru');
+  const fmt = new Intl.DateTimeFormat(ru ? 'ru-RU' : 'en-US', { month: 'short' });
+  const colors = ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4dd0e1','#4db6ac','#81c784','#aed581','#ffd54f','#ffb74d'];
   const out = [];
-  for (let i = 0; i < total; i++) {
-    const t = start + (i - offset) * DAY;
-    if (t < start || t > end || t > today) { out.push(null); continue; }
-    const key = new Date(t).toISOString().slice(0, 10);
-    const n = cal[key] ?? 0;
-    const lvl = n === 0 ? 0 : n <= 5 ? 1 : n <= 9 ? 2 : n <= 19 ? 3 : 4;
-    out.push({ key, n, lvl });
+  const labels = [];
+  let columns = 0;
+  for (let m = 0; m < 12; m++) {
+    const first = new Date(y, m, 1);
+    if (m > 0) {
+      for (let i = 0; i < 7; i++) out.push({ gap: true });
+      columns++;
+    }
+    const days = Math.round((new Date(y, m + 1, 1).getTime() - first.getTime()) / DAY);
+    const offset = (first.getDay() + 6) % 7;
+    for (let i = 0; i < offset; i++) out.push(null);
+    for (let d = 1; d <= days; d++) {
+      const dt = new Date(y, m, d);
+      if (dt.getTime() > today) { out.push(null); continue; }
+      const key = localDateKey(dt);
+      const n = cal[key] ?? 0;
+      const lvl = n === 0 ? 0 : n <= 5 ? 1 : n <= 9 ? 2 : n <= 19 ? 3 : 4;
+      out.push({ key, n, lvl, month: m, start: d === 1, color: colors[m] });
+    }
+    while (out.length % 7) out.push(null);
+    columns = Math.ceil(out.length / 7);
+    if (first.getTime() <= today) {
+      const name = fmt.format(first);
+      labels.push({ name: name.charAt(0).toUpperCase() + name.slice(1), col: columns - Math.ceil((offset + days) / 7), color: colors[m] });
+    }
   }
-  return out;
+  return { cells: out, labels };
 }
 
 function isOwn(p) {
@@ -920,6 +1152,7 @@ function isOwn(p) {
 
 function renderProfile(p) {
   const host = $('#profile');
+  currentProfile = p;
   host.replaceChildren();
   const own = isOwn(p);
 
@@ -965,28 +1198,51 @@ function renderProfile(p) {
   if (own && profileEditing) host.append(renderEdit(p));
 
   const panel = el('section', 'panel');
+  const nowYear = Math.max(new Date().getFullYear(), 2026);
   const years = [];
-  for (let y = 2026; y <= Math.max(new Date().getUTCFullYear(), 2026); y++) years.push(y);
+  for (let y = 2026; y <= nowYear; y++) years.push(y);
+  if (profileYearAuto) profileYear = nowYear;
   if (!years.includes(profileYear)) profileYear = years[years.length - 1];
   const tabs = el('div', 'tabs');
   for (const y of years) {
     const b = el('button', y === profileYear ? 'active' : '', String(y));
-    b.onclick = () => { profileYear = y; renderProfile(p); };
+    b.onclick = () => { profileYear = y; profileYearAuto = y === Math.max(new Date().getFullYear(), 2026); renderProfile(p); };
     tabs.append(b);
   }
   panel.append(tabs);
-  const cells = calendarCells(p, profileYear);
+  const calData = calendarCells(p, profileYear);
+  const cells = calData.cells;
   const total = cells.reduce((s, c) => s + (c?.n ?? 0), 0);
   panel.append(el('h2', 'thread-title', 'Активность за ' + profileYear + ' год: ' + total));
   const wrap = el('div', 'cal-wrap');
+  const strip = el('div', 'cal-strip');
+  const labels = el('div', 'cal-labels');
+  for (const l of calData.labels) {
+    const lab = el('span', 'cal-label', l.name);
+    lab.style.left = (l.col * 15) + 'px';
+    lab.style.setProperty('--month-color', l.color);
+    labels.append(lab);
+  }
+  strip.append(labels);
   const grid = el('div', 'cal');
   for (const c of cells) {
-    const cell = el('div', c ? 'cell l' + c.lvl : 'cell empty-cell');
-    if (c) cell.title = c.key + ': ' + c.n;
+    let cell;
+    if (c && c.gap) cell = el('div', 'cell gap-cell');
+    else if (c) {
+      cell = el('div', 'cell l' + c.lvl + (c.start ? ' month-start' : ''));
+      cell.title = c.key + ': ' + c.n;
+      if (c.start) cell.style.setProperty('--month-color', c.color);
+    } else cell = el('div', 'cell empty-cell');
     grid.append(cell);
   }
-  wrap.append(grid);
+  strip.append(grid);
+  wrap.append(strip);
   panel.append(wrap);
+  const todayKey = localDateKey(new Date());
+  const currentCell = grid.querySelector('.cell[title^="' + todayKey + '"]');
+  if (currentCell) requestAnimationFrame(function () {
+    wrap.scrollLeft = Math.max(0, currentCell.offsetLeft - wrap.clientWidth / 2);
+  });
   const legend = el('div', 'cal-legend muted small');
   legend.append(document.createTextNode('Меньше '));
   for (let i = 0; i <= 4; i++) legend.append(el('span', 'cell l' + i));
@@ -1009,6 +1265,30 @@ function renderProfile(p) {
     panel.append(el('p', 'muted', 'Пока нет засчитанных задач. Решённые задачи отмечает администратор.'));
   }
   host.append(panel);
+  if (own) renderProfilePosts(p);
+}
+
+function renderProfilePosts(p) {
+  const seq = ++profilePostsSeq;
+  const panel = el('section', 'panel');
+  const title = el('h2', 'thread-title', 'Посты');
+  const feed = el('div', 'feed profile-feed');
+  feed.append(el('p', 'muted small', 'Загрузка постов…'));
+  panel.append(title, feed);
+  $('#profile').append(panel);
+
+  api('/api/posts?limit=100&username=' + encodeURIComponent(p.username))
+    .then((list) => {
+      if (seq !== profilePostsSeq) return;
+      title.textContent = 'Посты: ' + list.length;
+      feed.replaceChildren();
+      if (!list.length) feed.append(el('p', 'muted', 'Постов пока нет.'));
+      else list.forEach((x) => feed.append(makePost(x)));
+    })
+    .catch((e) => {
+      if (seq !== profilePostsSeq) return;
+      feed.replaceChildren(el('p', 'muted small', e.message));
+    });
 }
 
 function renderEdit(p) {
@@ -1360,3 +1640,10 @@ async function init() {
 }
 
 init();
+setInterval(function () {
+  const y = Math.max(new Date().getFullYear(), 2026);
+  if (profileYearAuto && y !== profileYear && currentProfile) {
+    profileYear = y;
+    renderProfile(currentProfile);
+  }
+}, 60000);

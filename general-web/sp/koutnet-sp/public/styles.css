@@ -30,7 +30,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 h1 { font-size: 22px; margin: 0 0 8px; }
 h2, h3 { margin: 0; font-size: 16px; }
-.verified { color: var(--accent); vertical-align: -2px; }
+.verified { color: var(--accent); vertical-align: -2px; margin-left: 4px; }
 
 .top {
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
@@ -80,11 +80,14 @@ textarea { width: 100%; resize: vertical; }
 .composer-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .counter { margin-left: 0; }
 .preview { display: block; max-width: 100%; max-height: 260px; margin-top: 10px; border: 1px solid var(--border); border-radius: 6px; }
-#composer { max-width: 640px; margin: 0 auto; }
+#composer { max-width: 720px; margin: 0 auto; }
 #composer .field > span { text-align: center; }
-#composer .composer-row { justify-content: center; }
+#composer .composer-row { justify-content: flex-start; }
+.md-help { margin-left: auto; color: var(--accent); font-size: 13px; white-space: nowrap; }
+.md-help:hover { text-decoration: underline; }
 
 .feed { max-width: 720px; margin: 14px auto 0; display: grid; gap: 12px; }
+.profile-feed { max-width: none; margin-top: 10px; }
 .post { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
 .post-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .post-author { font-weight: 600; }
@@ -106,7 +109,43 @@ textarea { width: 100%; resize: vertical; }
 .image-download:hover { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 @media (hover: none) { .image-download { opacity: 1; transform: none; pointer-events: auto; } }
 time { color: var(--muted); font-size: 13px; }
+.post-highlight {
+  position: relative;
+  display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;
+  margin-top: 8px; padding: 8px 8px 8px 30px;
+  background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.4;
+  white-space: nowrap; overflow: hidden; cursor: pointer;
+}
+.post-highlight::before,
+.quote::before {
+  content: ""; position: absolute; left: 6px; top: 0; width: 18px; height: 50%;
+  border-left: 2px solid var(--border); border-bottom: 2px solid var(--border);
+  border-bottom-left-radius: 9px; pointer-events: none;
+}
+.post-highlight:hover { background: var(--card); }
+.post-highlight-who { display: flex; align-items: center; gap: 6px; flex: none; min-width: 0; }
+.post-highlight-who .avatar-sm,
+.post-highlight-who .avatar-fallback { flex: none; }
+.post-highlight-text { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.post-highlight-likes { display: inline-flex; align-items: center; gap: 3px; flex: none; color: var(--accent); }
+.post-highlight-likes.liked { color: var(--ok); font-weight: 600; }
+.like-icon { width: 16px; height: 16px; object-fit: contain; flex: none; }
 .post-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.post-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.reaction-btn { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.reaction-btn:hover { color: var(--accent); }
+.reaction-btn.liked { color: var(--ok); font-weight: 600; }
+.reaction-btn.disliked { color: var(--bad); font-weight: 600; }
+.views-count { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; }
+.eye-icon { display: inline-flex; align-items: center; }
+.eye-icon svg { display: block; width: 17px; height: 14px; }
+.eye-icon svg path[fill="#fff"] { fill: var(--fg); }
+.eye-icon svg path[fill="#000"] { fill: var(--muted); }
+.eye-icon svg path[stroke="#000"] { stroke: var(--fg); }
+.delete-btn { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.delete-btn:hover { color: var(--bad); text-decoration: none; border: none; }
+.delete-icon { width: 14px; height: 14px; object-fit: contain; }
+.comment-foot .delete-btn { margin-left: 12px; }
 
 /* comments: same markup and styles as Tasks */
 .comments-box { display: grid; gap: 10px; margin-top: 10px; }
@@ -118,7 +157,15 @@ time { color: var(--muted); font-size: 13px; }
 .comment-foot { padding: 0 12px 8px; }
 .link-btn { background: none; border: none; padding: 0; color: var(--accent); font-size: 13px; cursor: pointer; }
 .link-btn:hover { text-decoration: underline; border: none; }
-.quote { border-left: 3px solid var(--border); margin: 8px 12px 0; padding: 2px 8px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.comment-foot .like-btn { display: inline-flex; align-items: center; gap: 4px; margin-left: 12px; }
+.comment-foot .like-btn.liked { color: var(--ok); font-weight: 600; }
+.link-btn:disabled { opacity: .6; cursor: default; text-decoration: none; }
+.quote {
+  position: relative; margin: 8px 12px 0; padding: 8px 10px 8px 30px;
+  border-radius: 0 6px 6px 0; background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  color: var(--muted); font-size: 13px; overflow-wrap: anywhere;
+}
+.quote .small { color: var(--accent); font-weight: 600; }
 .reply-bar { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
 .user-link { display: inline-flex; align-items: center; gap: 6px; color: var(--fg); font-size: 14px; }
 .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
@@ -151,6 +198,12 @@ time { color: var(--muted); font-size: 13px; }
 .cell.l2 { background: color-mix(in srgb, var(--ok) 50%, var(--bg)); }
 .cell.l3 { background: color-mix(in srgb, var(--ok) 75%, var(--bg)); }
 .cell.l4 { background: var(--ok); }
+.cal-strip { position: relative; padding-top: 18px; width: max-content; }
+.cal-labels { position: absolute; top: 0; left: 0; right: 0; height: 16px; }
+.cal-label { position: absolute; top: 0; white-space: nowrap; font-size: 11px; color: var(--muted); font-weight: 600; }
+.cal-label::before { content:""; display:inline-block; width:7px; height:7px; border-radius:2px; margin-right:4px; background:var(--month-color, var(--muted)); }
+.gap-cell { background: transparent; }
+.cell.month-start { box-shadow: inset 2px 0 0 var(--month-color, var(--accent)); }
 .cal-legend { display: flex; gap: 4px; align-items: center; justify-content: flex-end; margin-top: 8px; }
 .solved-list { margin-top: 14px; display: grid; gap: 6px; }
 .solved-row { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); padding-top: 6px; }

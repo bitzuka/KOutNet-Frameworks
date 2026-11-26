@@ -23,9 +23,21 @@ koutnet.pw, www.koutnet.pw {
                 file_server
         }
 
+        handle /api/auth/register {
+                reverse_proxy 127.0.0.1:3100
+        }
+
+        handle_path /code/* {
+                root * /var/www/koutnet/code
+                @codefile path_regexp codefile /[^/]+$
+                header @codefile Content-Type "text/plain; charset=utf-8"
+                header Cache-Control "no-store"
+                file_server browse
+        }
+
         handle {
                 root * /var/www/koutnet
-                @html path / /index.html /404.html /registration.html
+                @html path / /index.html /404.html /registration.html /koutnet-registration.html /download.html
                 header @html Cache-Control "no-store"
                 file_server
         }

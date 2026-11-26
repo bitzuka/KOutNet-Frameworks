@@ -49,10 +49,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
   .brand b { font-size: 17px; }
   nav.menu { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
   nav.menu a { color: var(--muted); font-weight: 600; font-size: 13.5px; padding: 8px 11px;
-    border-radius: 6px; transition: all .15s ease; }
+    border-radius: 6px; }
   nav.menu a:hover { color: var(--blue-soft); background: rgba(61,174,233,.12); }
-  .nav-cta { background: none; color: var(--blue) !important; border-radius: 0; padding: 4px 2px; font-weight: 700; font-size: 13.5px; box-shadow: none; transition: color .15s ease; }
-  .nav-cta:hover { background: none; color: var(--blue-soft) !important; transform: none; text-decoration: underline; text-underline-offset: 4px; }
+  .nav-cta { background: none; color: var(--blue) !important; border-radius: 0; padding: 4px 2px; font-weight: 700; font-size: 13.5px; box-shadow: none; }
+  .nav-cta:hover { background: none; color: var(--blue-soft) !important; text-decoration: underline; text-underline-offset: 4px; }
 
   /* ===== HERO (весь первый экран) ===== */
   .hero {
@@ -65,11 +65,11 @@ SPDX-License-Identifier: GPL-3.0-or-later
   .hero .abbr { font-size: clamp(15px, 2.3vw, 19px); color: var(--muted); max-width: 640px; }
   .hero .abbr b { color: var(--blue-soft); }
   .btnrow { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
-  .btn { padding: 4px 2px; border-radius: 0; font-weight: 700; font-size: 15px; transition: color .15s ease; border: none; display: inline-block; background: none; box-shadow: none; }
+  .btn { padding: 4px 2px; border-radius: 0; font-weight: 700; font-size: 15px; border: none; display: inline-block; background: none; box-shadow: none; }
   .btn-blue { background: none; color: var(--blue); box-shadow: none; }
-  .btn-blue:hover { background: none; color: var(--blue-soft); transform: none; text-decoration: underline; text-underline-offset: 5px; }
+  .btn-blue:hover { background: none; color: var(--blue-soft); text-decoration: underline; text-underline-offset: 5px; }
   .btn-ghost { border: none; color: var(--blue); background: none; }
-  .btn-ghost:hover { background: none; color: var(--blue-soft); transform: none; text-decoration: underline; text-underline-offset: 5px; }
+  .btn-ghost:hover { background: none; color: var(--blue-soft); text-decoration: underline; text-underline-offset: 5px; }
   .hero .shot {
     margin-top: 26px; width: min(94%, 1000px);
     border: 1px solid var(--line); border-radius: 12px;
@@ -93,8 +93,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
   .news-item b.t { color: var(--text); font-size: 15.5px; }
   .news-item p { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; }
   .allnews { display: flex; justify-content: flex-end; margin-top: 18px; }
-  .allnews a { font-weight: 700; font-size: 14px; color: var(--blue); background: none; border: none; transition: color .15s ease; }
-  .allnews a:hover { color: var(--blue-soft); text-decoration: underline; text-underline-offset: 4px; transform: none; }
+  .allnews a { font-weight: 700; font-size: 14px; color: var(--blue); background: none; border: none; }
+  .allnews a:hover { color: var(--blue-soft); text-decoration: underline; text-underline-offset: 4px; }
 
   .frow {
     display: grid; grid-template-columns: 1.05fr .95fr; gap: 28px; align-items: center;
@@ -134,8 +134,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
   .fbrand img { height: 30px; }
   .fbrand b { color: #fff; font-size: 15.5px; }
   .fsocial { display: flex; gap: 7px; justify-content: center; }
-  .fsocial img { height: 44px; border-radius: 7px; border: 1px solid var(--line); transition: all .15s ease; }
-  .fsocial img:hover { transform: translateY(-2px); border-color: var(--blue); }
+  .fsocial img { height: 44px; border-radius: 7px; border: 1px solid var(--line); }
+  .fsocial img:hover { border-color: var(--blue); }
   .fbottom { border-top: 1px solid var(--line); padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: flex-end; gap: 10px; color: #8a959e; font-size: 12px; }
   .fbottom > span:first-of-type { grid-column: 1; grid-row: 1; justify-self: start; align-self: end; min-width: 0; overflow-wrap: break-word; }
   .fbottom > span:last-of-type { grid-column: 3; grid-row: 1; justify-self: end; align-self: end; }
@@ -152,8 +152,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
   footer .fbrand b { color: #fff; font-size: 15.5px; }
   footer .fsocial { display: flex; gap: 7px; flex-wrap: wrap; }
   footer .fsocial img { height: 44px; width: auto; border-radius: 7px; border: 1px solid var(--line);
-    background: rgba(255,255,255,.04); transition: transform .15s ease, border-color .15s ease; }
-  footer .fsocial img:hover { transform: translateY(-2px); border-color: var(--blue); }
+    background: rgba(255,255,255,.04); }
+  footer .fsocial img:hover { border-color: var(--blue); }
 
   /* ---- hero: фон mascot2 (прямо как у kdenlive), скрин поверх ---- */
   .hero {
@@ -174,6 +174,18 @@ SPDX-License-Identifier: GPL-3.0-or-later
   .kim { display: inline-flex; align-items: flex-end; gap: 8px; grid-column: 1 / -1; grid-row: 1; justify-self: center; align-self: end; }
   .kim img { height: 60px; width: auto; display: block; border-radius: 6px; }
     @media (max-width: 900px) { .fgrid { grid-template-columns: repeat(2, 1fr); } .fgrid > .fcol:first-child { grid-column: 1 / -1; } }
+  .reg-dialog { width: min(520px, calc(100% - 32px)); padding: 24px; border: 1px solid var(--line); border-radius: 7px; background: #171b20; color: var(--text); box-shadow: 0 30px 80px rgba(0,0,0,.6); text-align: left; }
+  .reg-dialog::backdrop { background: rgba(8,10,12,.72); backdrop-filter: blur(4px); }
+  .reg-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .reg-head h2 { margin: 0; font-size: 22px; color: #fff; }
+  .reg-close { background: none; border: 0; color: var(--muted); font-size: 26px; line-height: 1; cursor: pointer; }
+  .reg-close:hover { color: var(--blue-soft); }
+  .reg-hint { color: var(--muted); margin: 6px 0 0; font-size: 13.5px; }
+  .reg-options { display: grid; gap: 10px; margin-top: 18px; }
+  .reg-option { display: block; padding: 14px 16px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); color: var(--text); text-decoration: none; }
+  .reg-option:hover { border-color: var(--blue); background: rgba(61,174,233,.12); }
+  .reg-option strong { display: block; color: #fff; font-size: 16px; margin-bottom: 4px; }
+  .reg-option span { color: var(--muted); font-size: 13.5px; }
 </style>
 </head>
 <body>
@@ -182,22 +194,21 @@ SPDX-License-Identifier: GPL-3.0-or-later
   <div class="nav-in">
     <a class="brand" href="#top"><img src="/assets/logo.png" alt="KOutNet"></a>
     <nav class="menu">
-      <a href="#top">Загрузка</a>
+      <a href="https://koutnet.pw/download.html">Загрузка</a>
       <a href="#news">Новости</a>
-      <a href="#simple">Простота</a>
       <a href="#more">План развития</a>
       <a href="#more">Руководство</a>
       <a href="https://tasks.koutnet.pw/">задачи</a>
       <a href="https://sp.koutnet.pw/">посты</a>
     </nav>
-    <a class="nav-cta" href="https://koutnet.pw/registration.html">Создать аккаунт</a>
+    <a class="nav-cta" href="#regChoice" id="regChoiceOpen">Создать аккаунт</a>
   </div>
 </header>
 
 <div class="hero" id="top">
   <p class="maintext">KOutNet - аббревиатура от Kommunication Out Network. работает в Linux и Windows</p>
   <div class="btnrow">
-    <a class="btn btn-blue" href="#" onclick="return false" title="Заглушка: билды скоро">Загрузка</a>
+    <a class="btn btn-blue" href="https://koutnet.pw/download.html">Загрузка</a>
   </div>
   <img class="shot" src="/assets/full2main.webp" alt="KOutNet — главный экран">
 </div>
@@ -267,6 +278,26 @@ SPDX-License-Identifier: GPL-3.0-or-later
     </div>
   </div>
 </div>
+
+<dialog class="reg-dialog" id="regChoice">
+  <div class="reg-head">
+    <h2>Создать аккаунт</h2>
+    <button type="button" class="reg-close" aria-label="Закрыть">&times;</button>
+  </div>
+  <p class="reg-hint">Выбери, какой аккаунт тебе нужен.</p>
+  <div class="reg-options">
+    <a class="reg-option" href="https://koutnet.pw/registration.html">
+      <strong>Matrix</strong>
+      <span>Аккаунт @username:koutnet.pw для мессенджера.</span>
+    </a>
+    <a class="reg-option" href="https://koutnet.pw/koutnet-registration.html">
+      <strong>KOutNet</strong>
+      <span>Внутренний аккаунт для задач, постов и форума.</span>
+    </a>
+  </div>
+</dialog>
+
+
 <footer>
   <div class="wrap">
     <div class="fgrid">
@@ -276,7 +307,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
       </div>
       <div class="fcol">
         <b class="t">Проекты</b>
-        <a href="#top">Загрузка</a>
+        <a href="https://koutnet.pw/download.html">Загрузка</a>
         <a href="https://koutnet.pw/registration.html">Matrix-сервер</a>
         <a href="https://tasks.koutnet.pw/">Портал задач</a>
       </div>
@@ -312,6 +343,26 @@ SPDX-License-Identifier: GPL-3.0-or-later
     </div>
   </div>
 </footer>
+
+<script>
+(function () {
+  function show(d) {
+    if (typeof d.showModal === 'function') d.showModal();
+    else d.setAttribute('open', '');
+  }
+  function hide(d) {
+    if (typeof d.close === 'function') d.close();
+    else d.removeAttribute('open');
+  }
+  var open = document.getElementById('regChoiceOpen');
+  var dlg = document.getElementById('regChoice');
+  if (!open || !dlg) return;
+  open.addEventListener('click', function (e) { e.preventDefault(); show(dlg); });
+  var close = dlg.querySelector('.reg-close');
+  if (close) close.addEventListener('click', function () { hide(dlg); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) hide(dlg); });
+})();
+</script>
 
 <!-- /|、
    (˚ˎ 。7

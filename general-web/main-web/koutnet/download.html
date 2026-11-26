@@ -1,0 +1,115 @@
+<!--
+SPDX-FileCopyrightText: 2026 Matvey Shcherbinin <bitzuka.koutnet@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+
+-->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Загрузка — KOutNet</title>
+<style>
+  :root { --blue:#3daee9; --blue-soft:#63c0f2; --text:#eff0f1; --muted:#a8becd; --line:rgba(120,140,160,.3); --panel:rgba(23,27,31,.78); --card:rgba(49,54,59,.55); }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Noto Sans","Cantarell","Segoe UI",system-ui,sans-serif; color:var(--text); font-size:15px; line-height:1.6; background-color:#12161a; min-height:100vh; }
+  body::before { content:""; position:fixed; inset:0; z-index:-1; background:radial-gradient(900px 700px at 72% -8%,rgba(119,89,194,.2),transparent 62%),linear-gradient(180deg,#2b2536 0%,#25202f 55%,#1a1626 100%); }
+  a { color:var(--blue-soft); text-decoration:none; }
+  a:hover { color:#fff; text-decoration:underline; }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 22px; }
+  header.nav { position:sticky; top:0; z-index:50; background:rgba(18,22,26,.82); border-bottom:1px solid var(--line); }
+  .nav-in { display:flex; align-items:center; gap:18px; padding:9px 22px; max-width:1080px; margin:0 auto; }
+  .brand img { height:32px; display:block; }
+  nav.menu { display:flex; gap:4px; flex:1; justify-content:center; flex-wrap:wrap; }
+  nav.menu a { color:var(--muted); font-weight:600; font-size:13.5px; padding:8px 11px; border-radius:6px; }
+  nav.menu a:hover { color:var(--blue-soft); background:rgba(61,174,233,.12); text-decoration:none; }
+  section.block { padding:48px 0; }
+  h1 { font-size:clamp(28px,4vw,40px); margin:0 0 6px; color:#fff; }
+  .title-row { display:flex; align-items:center; justify-content:space-between; width:100%; gap:18px; flex-wrap:wrap; }
+  .dl-btn { display:inline-block; border:0; border-radius:6px; padding:7px 13px; background:rgba(18,22,26,.82); color:#fff; font-size:13px; font-weight:700; }
+  .dl-btn:hover { background:rgba(18,22,26,.95); color:#fff; text-decoration:none; }
+  h2.sec { font-size:clamp(22px,3vw,30px); margin:0 0 24px; color:#fff; }
+  .lead { color:var(--muted); margin:0 0 26px; max-width:760px; }
+  .folder { display:inline-block; border:1px solid #5c6470; border-bottom:0; border-radius:8px 8px 0 0; background:var(--card); color:#fff; padding:9px 16px; font-weight:700; }
+  .folder::before { content:""; display:inline-block; width:12px; height:8px; margin-right:8px; background:#c9b997; border:1px solid #8a8069; border-radius:2px 2px 0 0; }
+  .folder-panel { border:1px solid #5c6470; border-radius:0 8px 8px 8px; background:var(--panel); padding:22px; }
+  .meta { display:flex; flex-wrap:wrap; gap:10px 28px; padding-bottom:14px; border-bottom:1px dashed var(--line); }
+  .meta div { min-width:210px; }
+  .meta span { display:block; color:var(--muted); font-size:12px; }
+  .meta b { font-size:14px; }
+  .folder-actions { margin:14px 0 8px; display:flex; gap:18px; flex-wrap:wrap; }
+  .file-list { margin:0; padding:0; list-style:none; display:grid; gap:4px; }
+  .file-list li { display:flex; justify-content:space-between; gap:16px; border-top:1px solid rgba(120,140,160,.2); padding-top:4px; }
+  .file-list small { color:var(--muted); text-align:right; }
+  .empty { border:1px dashed var(--line); border-radius:8px; padding:28px; text-align:center; color:var(--muted); background:var(--panel); }
+  footer { border-top:1px solid var(--line); color:var(--muted); padding:22px 0 34px; font-size:13px; }
+  @media (max-width:700px) { .nav-in { flex-wrap:wrap; } nav.menu { order:3; flex-basis:100%; } .folder-panel { padding:16px; } .file-list li { flex-direction:column; gap:0; } .file-list small { text-align:left; } }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="/"><img src="/assets/logo.png" alt="KOutNet"></a>
+    <nav class="menu">
+      <a href="/">Главная</a>
+      <a href="https://tasks.koutnet.pw/">задачи</a>
+      <a href="https://sp.koutnet.pw/">посты</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="block">
+    <div class="title-row">
+      <h1>Загрузка и исходники</h1>
+      <a class="dl-btn" href="/koutnet.tar.gz" download>скачать полностью (.tar.gz)</a>
+    </div>
+    <div class="folder">koutnetwork</div>
+    <section class="folder-panel">
+      <div class="meta">
+        <div><span>Файлов в git</span><b>322</b></div>
+        <div><span>Обновлена</span><b>2026-11-23</b></div>
+        <div><span>Последний коммит</span><b>f665092 — handle every sample format in mic meter and test tone</b></div>
+        <div><span>Автор</span><b>Matvey Shcherbinin</b></div>
+      </div>
+      <div class="folder-actions">
+        <a href="https://invent.kde.org/bitzuka/koutnet/-/tree/master">Открыть репозиторий</a>
+        <a href="https://invent.kde.org/bitzuka/koutnet/-/commit/f66509209b567795ac42e3e7544de8fec20657ea">Посмотреть коммит</a>
+      </div>
+      <ul class="file-list">
+        <li><a href="/code/.clang-format" title="Initial import of koutnet to KDE Invent">.clang-format</a><small>2712 B / 2026-09-05 / b646001</small></li>
+        <li><a href="/code/.git-blame-ignore-revs" title="Initial import of koutnet to KDE Invent">.git-blame-ignore-revs</a><small>637 B / 2026-09-05 / b646001</small></li>
+        <li><a href="/code/.github/" title="Prepare 0.2.0 alpha release">.github/</a><small>2 файла / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/.gitignore" title="add the bundled wallpapers and the sound schemes">.gitignore</a><small>109 B / 2026-11-18 / 06758b8</small></li>
+        <li><a href="/code/.gitlab-ci.yml" title="Prepare 0.2.0 alpha release">.gitlab-ci.yml</a><small>7066 B / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/.kde-ci.yml" title="Prepare 0.2.0 alpha release">.kde-ci.yml</a><small>3372 B / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/.mailmap" title="finish security review round: honest crypto handshake, KWallet-backed secret store, group key confirmation">.mailmap</a><small>340 B / 2026-09-18 / 84dd594</small></li>
+        <li><a href="/code/AI_POLICY.md" title="update ai policy and contributing docs">AI_POLICY.md</a><small>4194 B / 2026-11-18 / e13f664</small></li>
+        <li><a href="/code/CMakeLists.txt" title="Prepare 0.2.0 alpha release">CMakeLists.txt</a><small>3576 B / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/CODE_OF_CONDUCT.md" title="update SPDX: i writed my real name">CODE_OF_CONDUCT.md</a><small>222 B / 2026-09-19 / e753d8d</small></li>
+        <li><a href="/code/CONTRIBUTING.md" title="update ai policy and contributing docs">CONTRIBUTING.md</a><small>4299 B / 2026-11-18 / e13f664</small></li>
+        <li><a href="/code/LICENSES/" title="import their timeline and room drawer">LICENSES/</a><small>10 файлов / 2026-10-22 / 2ad460c</small></li>
+        <li><a href="/code/Messages.sh" title="update SPDX: i writed my real name">Messages.sh</a><small>1115 B / 2026-09-19 / e753d8d</small></li>
+        <li><a href="/code/NEWS.md" title="Prepare 0.2.0 alpha release">NEWS.md</a><small>361 B / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/README.md" title="Prepare 0.2.0 alpha release">README.md</a><small>4546 B / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/REUSE.toml" title="Prepare 0.2.0 alpha release">REUSE.toml</a><small>2175 B / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/build-windows.ps1" title="update SPDX: i writed my real name">build-windows.ps1</a><small>6972 B / 2026-09-19 / e753d8d</small></li>
+        <li><a href="/code/packaging/" title="Prepare 0.2.0 alpha release">packaging/</a><small>10 файлов / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/sounds/" title="Prepare 0.2.0 alpha release">sounds/</a><small>10 файлов / 2026-11-22 / bd94685</small></li>
+        <li><a href="/code/src/" title="handle every sample format in mic meter and test tone">src/</a><small>273 файла / 2026-11-23 / f665092</small></li>
+        <li><a href="/code/tools/" title="update SPDX: i writed my real name">tools/</a><small>2 файла / 2026-09-19 / e753d8d</small></li>
+      </ul>
+    </section>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">Выпуски KOutNet</h2>
+    <div class="empty">выпусков пока нет , _ ,</div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">основной репозиторий KOutNet находится на <a href="https://invent.kde.org/bitzuka/koutnet">KDE Invent</a></div>
+</footer>
+</body>
+</html>

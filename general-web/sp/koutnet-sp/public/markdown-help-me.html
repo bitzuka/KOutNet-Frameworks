@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>справка о KON markdown — SP</title>
+  <link rel="stylesheet" href="/styles.css?v=comments13">
+  <script src="/look.js?v=comments13"></script>
+  <script>KoutnetLook.apply();</script>
+  <style>
+    .help { max-width: 900px; margin: 18px auto 0; display: grid; gap: 14px; }
+    .help h1 { margin-bottom: 6px; }
+    .help h2 { margin: 0 0 8px; font-size: 18px; }
+    .help p { margin: 0 0 10px; }
+    .help ul, .help ol { margin: 0 0 10px; padding-left: 22px; }
+    .md-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0 18px; }
+    .md-col { min-width: 0; }
+    .md-label { margin-bottom: 5px; color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+    .md-src, .md-out { min-width: 0; margin: 0; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+    .md-src { background: var(--card); font: 13px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .md-out { background: var(--bg); overflow-wrap: anywhere; }
+    .md-out > :first-child { margin-top: 0; }
+    .md-out > :last-child { margin-bottom: 0; }
+    @media (max-width: 700px) { .md-pair { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><a href="/" title="SP"><img src="/brand.webp" alt="SP"><img src="/brand2.webp" alt="KOutNet"></a></div>
+    <nav>
+      <a href="/">лента</a>
+      <a href="/profile">профиль</a>
+      <a href="https://koutnet.pw/" data-external>главная</a>
+      <a href="https://tasks.koutnet.pw/" data-external>задачи</a>
+      <a href="/markdown-help-me.html" class="active">справка о KON markdown</a>
+    </nav>
+  </header>
+
+  <main class="help">
+    <section class="panel">
+      <h1>справка о KON markdown</h1>
+      <p>markdown - это простой язык разметки, где ты пишешь самый обычный текст, а специальные символы переделывают его в оформленый пост. никаких кнопок "курсив" в тексте нет т.к. достаточно звездочек решеток и скобок, о которых и написана справка :3</p>
+      <p>KOutNet markdown - это серверная сборка markdown на sp.koutnet.pw, она почти совпадает с Github стилем для того чтобы не переучиваться по сто раз. заголовки, списки, таблицы, код, сноски, эмодзи и панели уведомлений. все это переводится в HTML после чего результат очищается от опасного и (или) вредоносного кода</p>
+      <p class="muted small">кстати. пост может содержать до 500, а коменты до 250 символов, ну и картинки мы сжимаем. это сделано все ради того чтобы наш сервер выжил вообще от такой рубрики. кнопки кстати на главной странице уже включают базовую разметку, но эту справку тоже стоило бы прочесть и раз ты тут -> +100 в карму</p>
+    </section>
+
+    <section class="panel">
+      <h2>1. абзацы и переносы строк</h2>
+      <p>пустая строка начинает новый обзац. перенос строки внутри обзаца делает меньший разрыв, а пустая строка значительно больше т.е. как &lt;br&gt;</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">первая строка
+вторая строка
+
+новый абзац</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. заголовки</h2>
+      <p>от 1 до 6 решёток которые объявляют размер заголовка. у каждого заголовка автоматически появляется якорь поэтому на него можно потом ссылаться</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown"># заголовок 1
+## заголовок 2
+### заголовок 3
+#### заголовок 4
+##### заголовок 5
+###### заголовок 6</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>3. жирный, курсив, зачёркнутый</h2>
+      <p>две звездочки (*) или два подчеркивания (_) - это жирное выделение<br>одна (*) или одно (_) дают курсив<br>две волнистые линии (~) зачеркивают текст</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">**жирный** и __тоже жирный__
+
+*курсив* и _тоже курсив_
+
+***жирный курсив***
+
+~~зачёркнутый текст~~</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>4. цитаты</h2>
+      <p>одна стрелка перед текстом (>) отступ с красной строки, две стрелки (> >) уже вложеная цитата, а внутри цитаты работает отдельно та же разметка</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">> обычная цитата
+> вторая строка цитаты
+>
+> > вложенная цитата
+
+> цитата с **жирным** и `кодом`</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>5. списки</h2>
+      <p>маркированый список (-), (*), (+). нумерованый это цифра с точкойб а вложеный текст сдвигается двумя пробелами.<br>важно: чекбоксы в задачах показаны, но не активны</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">- первый пункт
+- второй пункт
+  - вложенный пункт
+  - ещё один
+
+1. первый
+2. второй
+3. третий
+
+- [ ] не сделано
+- [x] сделано</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>6. код</h2>
+      <p>короткий код можно легко и быстро обозначить в обратных кавычках (где Ё). большой блок обозначается тройными обратными кавычками, тут даже уже можно указать язык программирования, блоки подсвечиваются, и у них есть кнопка "копировать"</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">В строке: `const x = 1`.
+
+```js
+const x = 1;
+console.log('привет', x);
+```
+
+```
+блок без языка
+```</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>7. ссылки</h2>
+      <p>ссылка - это квадратными и затем круглыми скобками без пробела с адресом. голые адреса автоматом становятся ссылками и открываются в новой вкладке</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">[сайт KOutNet](https://koutnet.pw)
+
+https://sp.koutnet.pw
+
+[посты](https://sp.koutnet.pw) и [задачи](https://tasks.koutnet.pw)</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>8. картинки</h2>
+      <p>да тоже самое что и ссылка, но с восклицательным знаком и подписью вместо текста. у картинок есть кнопка скачивания, но вы её убрать не можете ;3<br>эта отдельная кнопка добавляет к файл к посту с сжатием</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">![иконка лайка](/like.png)</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>9. таблицы</h2>
+      <p>первая строка - это заголовки, вторая - выравнивание, дальше данные, а слева или справа идет выравнивание по горизонтали</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">| имя | роль | баллы |
+| --- | :---: | ---: |
+| bitzuka | adm | 42 |
+| гость | читатель | 0 |</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>10. линия</h2>
+      <p>три и более дефисов (-), звездочек (*), или подчеркиваний (_) на отдельной строке делают целую горизонтальную линию</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">текст выше
+
+---
+
+текст ниже</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>11. сноски</h2>
+      <p>в тексте вы можете поставить свою метку чтобы туда ссылаться с тем именем которое вы сами и придумаете, а сноски автоматически нумеруются</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">Это предложение со сноской[^первая].
+
+[^первая]: а это текст самой сноски.</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>12. эмодзи</h2>
+      <p>короткие коды в двоеточияз превращаются в эмодзи, например :smile: , :rocket: , :+1:</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">привет :smile: полёт :rocket: одобрено :+1:</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>13. панели уведомлений</h2>
+      <p>а вот здесь интересная схемка уже. строка [!NOTE] и следующие за ней строки с ">" превращаются в цетную панель. работают таким макаром NOTE, TIP, IMPORTANT, WARNING, и CAUTION</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown">> [!NOTE]
+> полезная заметка
+
+> [!TIP]
+> маленький совет
+
+> [!WARNING]
+> осторожно, это предупреждение
+
+> [!CAUTION]
+> будьте внимательны</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>14. HTML и безопасность</h2>
+      <p>простой HTML вроде &lt;b&gt; или &lt;i&gt; работает, но его результат 100% очищается, а скрипты, стили, iframe объекты, формы и атрибут style удаляются. поэтому вставить чёт опасное в пост не получится</p>
+      <div class="md-pair" data-example>
+        <script type="text/markdown"><b>жирный через HTML</b> и <i>курсив через HTML</i>, но <span style="color:red">цвет не останется</span>.</script>
+        <div class="md-col"><div class="md-label">написано так</div><pre class="md-src"></pre></div>
+        <div class="md-col"><div class="md-label">выглядит так</div><div class="md-out markdown-body"></div></div>
+      </div>
+    </section>
+
+    <section class="panel muted small">
+      <p>справка собрана на том же движке что и посты так что всё 100% идентично так что эта справка по-любому достоверна</p>
+    </section>
+  </main>
+
+  <script src="/vendor/markdown-it.min.js"></script>
+  <script src="/vendor/markdown-it-task-lists.min.js"></script>
+  <script src="/vendor/markdown-it-footnote.min.js"></script>
+  <script src="/vendor/markdown-it-emoji.min.js"></script>
+  <script src="/vendor/markdown-it-anchor.umd.js"></script>
+  <script src="/vendor/markdown-it-container.min.js"></script>
+  <script src="/vendor/highlight.min.js"></script>
+  <script src="/vendor/purify.min.js"></script>
+  <script>
+    function slugifyHeading(s) {
+      return String(s).toLowerCase().trim()
+        .replace(/[`*_~[\]()#+.!?]/g, '')
+        .replace(/[^\p{L}\p{N}\s-]/gu, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+    function preprocessAlerts(src) {
+      let fence = '';
+      return String(src).split('\n').map((line) => {
+        const m = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+        if (m) {
+          const mark = m[1];
+          if (!fence) fence = mark;
+          else if (mark[0] === fence[0] && mark.length >= fence.length) fence = '';
+          return line;
+        }
+        if (!fence) {
+          return line.replace(/^ {0,3}> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*$/, '::: $1');
+        }
+        return line;
+      }).join('\n');
+    }
+    const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    function highlight(code, lang) {
+      const hljs = window.hljs;
+      if (!hljs) return escapeHtml(code);
+      if (lang && hljs.getLanguage(lang)) {
+        try { return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value; } catch (_) {}
+      }
+      try { return hljs.highlightAuto(code).value; } catch (_) { return escapeHtml(code); }
+    }
+    const md = new window.markdownit({ html: true, linkify: true, breaks: true, typographer: false, highlight });
+    if (window.markdownitTaskLists) md.use(window.markdownitTaskLists, { enabled: false, label: true, labelAfter: true });
+    if (window.markdownitFootnote) md.use(window.markdownitFootnote);
+    if (window.markdownitEmoji) md.use(window.markdownitEmoji);
+    if (window.markdownItAnchor) {
+      const opts = { slugify: slugifyHeading, tabIndex: false };
+      try {
+        const permalink = window.markdownItAnchor.permalink;
+        if (permalink && permalink.ariaHidden) {
+          opts.permalink = permalink.ariaHidden({ symbol: '#', placement: 'before' });
+        }
+      } catch (_) {}
+      md.use(window.markdownItAnchor, opts);
+    }
+    if (window.markdownitContainer) {
+      const icons = { NOTE: 'ℹ️', TIP: '💡', IMPORTANT: '❗', WARNING: '⚠️', CAUTION: '🚨' };
+      Object.keys(icons).forEach((name) => md.use(window.markdownitContainer, name, {
+        validate: (params) => params.trim().toUpperCase() === name,
+        render: (tokens, idx) => tokens[idx].nesting === 1
+          ? '<div class="markdown-alert markdown-alert-' + name.toLowerCase() + '"><p class="markdown-alert-title">' + icons[name] + ' ' + name + '</p>\n'
+          : '</div>\n'
+      }));
+    }
+    function renderMd(text) {
+      return window.DOMPurify.sanitize(md.render(preprocessAlerts(text)), {
+        USE_PROFILES: { html: true },
+        ADD_TAGS: ['input'],
+        ADD_ATTR: ['target', 'rel', 'id', 'class', 'type', 'checked', 'disabled', 'start', 'aria-label', 'aria-hidden'],
+        FORBID_ATTR: ['style'],
+        FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form']
+      });
+    }
+    document.querySelectorAll('[data-example]').forEach((box) => {
+      const source = box.querySelector('script[type="text/markdown"]');
+      if (!source) return;
+      const text = source.textContent;
+      box.querySelector('.md-src').textContent = text;
+      box.querySelector('.md-out').innerHTML = renderMd(text);
+    });
+  </script>
+</body>
+</html>

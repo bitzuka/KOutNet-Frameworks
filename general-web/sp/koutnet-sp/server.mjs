@@ -18,6 +18,8 @@ const SESSION_TTL = 30 * 24 * 3600 * 1000;
 const MAX_POST = 500;
 const MAX_IMAGE = 400 * 1024;
 const BG_PROXY_MAX = 5 * 1024 * 1024;
+const VIEW_TTL = 24 * 3600 * 1000;
+const VIEW_LIMIT = 5000;
 mkdirSync(UPLOADS, { recursive: true });
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
@@ -35,6 +37,22 @@ const readSessions = () => readJson(SESSIONS, { sessions: [] }).sessions ?? [];
 const writeSessions = (s) => atomicWrite(SESSIONS, { sessions: s });
 const readPosts = () => readJson(POSTS, []);
 const writePosts = (p) => atomicWrite(POSTS, p);
+const reactions = (post, userId) => {
+  const likes = Array.isArray(post.likes) ? post.likes : [];
+  const dislikes = Array.isArray(post.dislikes) ? post.dislikes : [];
+  return {
+    likeCount: likes.length,
+    dislikeCount: dislikes.length,
+    likedByMe: !!userId && likes.includes(userId),
+    dislikedByMe: !!userId && dislikes.includes(userId)
+  };
+};
+const viewerKey = (req, me) => {
+  if (me) return 'u:' + me.userId;
+  const h = String(req.headers['x-sp-viewer'] ?? '');
+  if (/^[A-Za-z0-9_-]{16,80}$/.test(h)) return 'v:' + h;
+  return 'ip:' + hash(String(req.socket.remoteAddress ?? '') + '|' + String(req.headers['user-agent'] ?? ''));
+};
 const send = (res, code, obj) => {
   res.writeHead(code, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -127,6 +145,25 @@ const spProfileView = (p) => p ? {
   solved: p.solved || []
 } : null;
 const authorOf = async (userId) => spProfileView(await tasksProfile({ userId }));
+// a highlighted comment is rendered like a normal post author: avatar, nick, flags
+async function enrichHighlight(h, cache = null) {
+  if (!h) return null;
+  if (!h.userId) return h;
+  let a;
+  if (cache && cache.has(h.userId)) a = cache.get(h.userId);
+  else {
+    a = await authorOf(h.userId);
+    if (cache) cache.set(h.userId, a);
+  }
+  return {
+    ...h,
+    username: a?.username || h.username || '',
+    author: a?.displayName || h.author || '',
+    verified: a ? a.verified : !!h.verified,
+    adm: a ? a.adm : !!h.adm,
+    avatarUrl: a?.avatarUrl || ''
+  };
+}
 async function bridgeRequest(path, method, body) {
   try {
     const options = { method, headers: bridgeHeaders() };
@@ -138,6 +175,11 @@ async function bridgeRequest(path, method, body) {
 }
 async function spCommentCounts() {
   const r = await bridgeRequest('/api/sp/comment-counts', 'GET');
+  return r.ok && r.data && typeof r.data === 'object' ? r.data : {};
+}
+async function spCommentDigest(viewerId) {
+  const q = '/api/sp/comment-digest' + (viewerId ? '?viewerId=' + encodeURIComponent(viewerId) : '');
+  const r = await bridgeRequest(q, 'GET');
   return r.ok && r.data && typeof r.data === 'object' ? r.data : {};
 }
 
@@ -375,20 +417,36 @@ createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
 
-    const postView = async (x, commentCount = 0) => ({
+    const postView = async (x, commentCount = 0, author = null, commentHighlight = null) => ({
       id: x.id, text: x.text, image: x.image ? '/api/images/' + x.image : '',
-      createdAt: x.createdAt, author: await authorOf(x.userId),
-      commentCount
+      createdAt: x.createdAt, author: author ?? await authorOf(x.userId),
+      commentCount, commentHighlight,
+      views: Number(x.views) || 0,
+      ...reactions(x, me?.userId),
+      ownedByMe: !!me && x.userId === me.userId
     });
 
     if (p === '/api/posts' && req.method === 'GET') {
       const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 50));
       const before = url.searchParams.get('before') ?? '';
+      const username = (url.searchParams.get('username') ?? '').trim().toLowerCase();
       let list = readPosts().slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       if (before) list = list.filter((x) => x.createdAt < before);
-      const counts = await spCommentCounts();
+      const authors = new Map();
+      if (username) {
+        const pairs = await Promise.all(list.map(async (x) => [x, await authorOf(x.userId)]));
+        list = pairs.filter(([, a]) => a?.username?.toLowerCase() === username).map(([x, a]) => {
+          authors.set(x.id, a);
+          return x;
+        });
+      }
+      const digest = await spCommentDigest(me?.userId);
+      const highlightAuthors = new Map();
       return send(res, 200, await Promise.all(
-        list.slice(0, limit).map((x) => postView(x, counts[x.id] ?? 0))
+        list.slice(0, limit).map(async (x) => postView(
+          x, digest[x.id]?.count ?? 0, authors.get(x.id),
+          await enrichHighlight(digest[x.id]?.highlight, highlightAuthors)
+        ))
       ));
     }
 
@@ -418,19 +476,138 @@ createServer(async (req, res) => {
       return send(res, 200, await postView(post));
     }
 
+    // reactions on posts: likes and dislikes are mutually exclusive, stored with the post
+    const rr = p.match(/^\/api\/posts\/([^/]+)\/(like|dislike)$/);
+    if (rr && req.method === 'POST') {
+      if (!me) return send(res, 401, { error: 'Нужно войти через Tasks.' });
+      if (limited('react:' + me.userId, 30, 60000)) {
+        return send(res, 429, { error: 'Не так быстро, подождите минуту.' });
+      }
+      const postId = decodeURIComponent(rr[1]);
+      const kind = rr[2];
+      const list = readPosts();
+      const post = list.find((x) => x.id === postId);
+      if (!post) return send(res, 404, { error: 'Пост не найден.' });
+      const likes = Array.isArray(post.likes) ? post.likes.slice() : [];
+      const dislikes = Array.isArray(post.dislikes) ? post.dislikes.slice() : [];
+      const li = likes.indexOf(me.userId);
+      const di = dislikes.indexOf(me.userId);
+      if (kind === 'like') {
+        if (li >= 0) likes.splice(li, 1);
+        else {
+          likes.push(me.userId);
+          if (di >= 0) dislikes.splice(di, 1);
+        }
+      } else {
+        if (di >= 0) dislikes.splice(di, 1);
+        else {
+          dislikes.push(me.userId);
+          if (li >= 0) likes.splice(li, 1);
+        }
+      }
+      post.likes = likes;
+      post.dislikes = dislikes;
+      writePosts(list);
+      return send(res, 200, { id: postId, ...reactions(post, me.userId) });
+    }
+
+    // views are counted once per viewer per day, and only when the client actually sees the post
+    const vr = p.match(/^\/api\/posts\/([^/]+)\/view$/);
+    if (vr && req.method === 'POST') {
+      const postId = decodeURIComponent(vr[1]);
+      const list = readPosts();
+      const post = list.find((x) => x.id === postId);
+      if (!post) return send(res, 404, { error: 'Пост не найден.' });
+      const key = viewerKey(req, me);
+      const viewers = post.viewers && typeof post.viewers === 'object' && !Array.isArray(post.viewers)
+        ? { ...post.viewers } : {};
+      const now = Date.now();
+      for (const [k, t] of Object.entries(viewers)) {
+        if (!Number.isFinite(Number(t)) || now - Number(t) > VIEW_TTL) delete viewers[k];
+      }
+      const counted = !Object.prototype.hasOwnProperty.call(viewers, key);
+      if (counted) {
+        viewers[key] = now;
+        const keys = Object.keys(viewers);
+        if (keys.length > VIEW_LIMIT) {
+          keys.sort((a, b) => Number(viewers[a]) - Number(viewers[b]))
+            .slice(0, keys.length - VIEW_LIMIT).forEach((k) => { delete viewers[k]; });
+        }
+        post.views = (Number(post.views) || 0) + 1;
+      }
+      post.viewers = viewers;
+      writePosts(list);
+      return send(res, 200, { id: postId, views: Number(post.views) || 0, counted });
+    }
+
+    // own posts can be removed from the profile; comments on them go away with the post
+    const dr = p.match(/^\/api\/posts\/([^/]+)$/);
+    if (dr && req.method === 'DELETE') {
+      if (!me) return send(res, 401, { error: 'Нужно войти через Tasks.' });
+      const postId = decodeURIComponent(dr[1]);
+      const list = readPosts();
+      const post = list.find((x) => x.id === postId);
+      if (!post) return send(res, 404, { error: 'Пост не найден.' });
+      if (post.userId !== me.userId) return send(res, 403, { error: 'Можно удалить только свой пост.' });
+      writePosts(list.filter((x) => x.id !== postId));
+      if (post.image) {
+        try { unlinkSync(join(UPLOADS, post.image)); } catch (_) { /* already gone */ }
+      }
+      await bridgeRequest('/api/sp/comments/by-post/' + encodeURIComponent(postId), 'DELETE', {
+        userId: me.userId
+      });
+      return send(res, 200, { ok: true });
+    }
+
+    // likes on SP comments: Tasks owns the votes, SP only forwards the session user
+    const lm = p.match(/^\/api\/posts\/([^/]+)\/comments\/([^/]+)\/like$/);
+    if (lm && req.method === 'POST') {
+      if (!me) return send(res, 401, { error: 'Нужно войти через Tasks.' });
+      const postId = decodeURIComponent(lm[1]);
+      if (!readPosts().some((x) => x.id === postId)) return send(res, 404, { error: 'Пост не найден.' });
+      const r = await bridgeRequest(
+        '/api/sp/comments/' + encodeURIComponent(lm[2]) + '/like', 'POST', { userId: me.userId }
+      );
+      if (!r.ok) return send(res, 400, { error: r.data.error || 'Не удалось поставить лайк.' });
+      return send(res, 200, { ...r.data, highlight: await enrichHighlight(r.data.highlight) });
+    }
+
+    // own comments on posts: Tasks owns storage and checks authorship
+    const cdm = p.match(/^\/api\/posts\/([^/]+)\/comments\/([^/]+)$/);
+    if (cdm && req.method === 'DELETE') {
+      if (!me) return send(res, 401, { error: 'Нужно войти через Tasks.' });
+      const postId = decodeURIComponent(cdm[1]);
+      if (!readPosts().some((x) => x.id === postId)) return send(res, 404, { error: 'Пост не найден.' });
+      const r = await bridgeRequest(
+        '/api/sp/comments/' + encodeURIComponent(cdm[2]), 'DELETE', { userId: me.userId }
+      );
+      if (!r.ok) return send(res, 400, { error: r.data.error || 'Не удалось удалить комментарий.' });
+      const digest = await spCommentDigest(me.userId);
+      return send(res, 200, {
+        ...r.data,
+        highlight: await enrichHighlight(digest[postId]?.highlight),
+        count: digest[postId]?.count ?? 0
+      });
+    }
+
     // comments on posts: stored and rendered by Tasks, SP is just a client
     const cm = p.match(/^\/api\/posts\/([^/]+)\/comments$/);
     if (cm) {
       const postId = decodeURIComponent(cm[1]);
       if (!readPosts().some((x) => x.id === postId)) return send(res, 404, { error: 'Пост не найден.' });
       if (req.method === 'GET') {
-        const r = await bridgeRequest('/api/sp/comments?postId=' + encodeURIComponent(postId), 'GET');
+        const q = '/api/sp/comments?postId=' + encodeURIComponent(postId) +
+          (me ? '&viewerId=' + encodeURIComponent(me.userId) : '');
+        const r = await bridgeRequest(q, 'GET');
         if (!r.ok) return send(res, 502, { error: r.data.error || 'Не удалось загрузить комментарии.' });
         return send(res, 200, r.data);
       }
       if (req.method === 'POST') {
         if (!me) return send(res, 401, { error: 'Нужно войти через Tasks.' });
         const b = await readBody(req);
+        if (String(b.text ?? '').trim().length > 250) {
+          return send(res, 400, { error: 'Комментарий не длиннее 250 символов.' });
+        }
         const r = await bridgeRequest('/api/sp/comments', 'POST', {
           userId: me.userId,
           postId,
