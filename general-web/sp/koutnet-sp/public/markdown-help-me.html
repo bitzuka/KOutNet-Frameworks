@@ -4,8 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>справка о KON markdown — SP</title>
-  <link rel="stylesheet" href="/styles.css?v=comments16">
-  <script src="/look.js?v=comments16"></script>
+  <script>
+    (function () {
+      try {
+        var d = document.documentElement;
+        var t = localStorage.getItem('koutnet_sp_theme');
+        if (t !== 'dark' && t !== 'light') t = localStorage.getItem('koutnet_sp_look_theme');
+        if (t !== 'dark' && t !== 'light') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        d.dataset.theme = t;
+        var look = {};
+        try { look = JSON.parse(localStorage.getItem('koutnet_sp_look') || '{}'); } catch (_) {}
+        var src = look.wallpaper || (look.wallpaperUrl ? '/api/bg-proxy?url=' + encodeURIComponent(look.wallpaperUrl) : '');
+        if (src) {
+          d.classList.add('has-wallpaper');
+          d.style.setProperty('--sp-bg-image', 'url("' + String(src).replace(/"/g, '%22') + '")');
+        }
+        var colors = look.colors && typeof look.colors === 'object' ? look.colors : {};
+        ['bg', 'fg', 'card', 'border', 'muted', 'accent', 'accent-fg'].forEach(function (k) {
+          if (typeof colors[k] === 'string') d.style.setProperty('--' + k, colors[k]);
+        });
+      } catch (_) { /* браузер запретил localStorage */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="/styles.css?v=comments24">
+  <script src="/look.js?v=comments24"></script>
   <script>KoutnetLook.apply();</script>
   <style>
     .help { max-width: 900px; margin: 18px auto 0; display: grid; gap: 14px; }

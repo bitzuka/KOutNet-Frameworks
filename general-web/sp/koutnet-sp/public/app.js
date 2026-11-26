@@ -46,7 +46,9 @@ async function api(path, options = {}) {
 
 function initTheme() {
   const saved = localStorage.getItem('koutnet_sp_theme');
+  const lookTheme = localStorage.getItem('koutnet_sp_look_theme');
   if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+  else if (lookTheme === 'dark' || lookTheme === 'light') document.documentElement.dataset.theme = lookTheme;
   else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
 }
 
@@ -199,23 +201,28 @@ function sampleImage(src) {
 async function applyLook() {
   const html = document.documentElement;
   const src = wallpaperSource();
+  const colorKeys = ['bg', 'fg', 'card', 'border', 'muted', 'accent', 'accent-fg'];
+  const clearColors = () => {
+    for (const k of colorKeys) html.style.removeProperty('--' + k);
+  };
   html.classList.toggle('has-wallpaper', !!src);
   html.style.setProperty('--sp-bg-image', src ? 'url("' + src.replace(/"/g, '%22') + '")' : 'none');
-  for (const k of ['bg', 'fg', 'card', 'border', 'muted', 'accent', 'accent-fg']) {
-    html.style.removeProperty('--' + k);
-  }
 
   let finalBg = '';
   if (src && look.auto !== false) {
     try {
       const palette = paletteFrom(await sampleImage(src));
+      // Replace the early colours only once the new palette is ready, otherwise the page flashes white.
+      clearColors();
       finalBg = palette.bg;
       for (const [k, v] of Object.entries(palette)) {
         if (!k.startsWith('_')) html.style.setProperty('--' + k, v);
       }
     } catch (_) {
-      /* keep base or manually chosen colors */
+      /* keep the colours already applied by the inline head script */
     }
+  } else {
+    clearColors();
   }
 
   for (const [k, v] of Object.entries(look.colors || {})) {
@@ -225,7 +232,9 @@ async function applyLook() {
   }
 
   if (finalBg) {
-    html.dataset.theme = luminance(colorToRgb(finalBg)) < 0.45 ? 'dark' : 'light';
+    const next = luminance(colorToRgb(finalBg)) < 0.45 ? 'dark' : 'light';
+    html.dataset.theme = next;
+    try { localStorage.setItem('koutnet_sp_look_theme', next); } catch (_) { /* ignore */ }
   }
 }
 
@@ -344,6 +353,7 @@ function initAppearance() {
   $('#appearanceReset').onclick = async () => {
     look = { wallpaper: '', wallpaperUrl: '', colors: {}, auto: true };
     localStorage.removeItem(LOOK_KEY);
+    localStorage.removeItem('koutnet_sp_look_theme');
     await applyLook();
     fillAppearance();
     toast('настройки сброшены.');

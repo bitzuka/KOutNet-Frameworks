@@ -141,26 +141,34 @@
     const look = loadLook();
 
     const saved = localStorage.getItem('koutnet_sp_theme');
+    const lookTheme = localStorage.getItem('koutnet_sp_look_theme');
     if (saved === 'dark' || saved === 'light') html.dataset.theme = saved;
+    else if (lookTheme === 'dark' || lookTheme === 'light') html.dataset.theme = lookTheme;
     else if (window.matchMedia('(prefers-color-scheme: dark)').matches) html.dataset.theme = 'dark';
 
     const src = look.wallpaper ||
       (look.wallpaperUrl ? '/api/bg-proxy?url=' + encodeURIComponent(look.wallpaperUrl) : '');
+    const clearColors = () => {
+      for (const k of COLOR_KEYS) html.style.removeProperty('--' + k);
+    };
     html.classList.toggle('has-wallpaper', !!src);
     html.style.setProperty('--sp-bg-image', src ? 'url("' + src.replace(/"/g, '%22') + '")' : 'none');
-    for (const k of COLOR_KEYS) html.style.removeProperty('--' + k);
 
     let finalBg = '';
     if (src && look.auto !== false) {
       try {
         const palette = paletteFrom(await sampleImage(src));
+        // Цвета из <head> убираем только когда готова новая палитра, иначе страница мигает белым.
+        clearColors();
         finalBg = palette.bg;
         for (const [k, v] of Object.entries(palette)) {
           if (!k.startsWith('_')) html.style.setProperty('--' + k, v);
         }
       } catch (_) {
-        /* оставляем базовую палитру или вручную выбранные цвета */
+        /* сохраняем цвета, уже применённые встроенным скриптом */
       }
+    } else {
+      clearColors();
     }
 
     for (const [k, v] of Object.entries(look.colors || {})) {
@@ -170,7 +178,9 @@
     }
 
     if (finalBg) {
-      html.dataset.theme = luminance(colorToRgb(finalBg)) < 0.45 ? 'dark' : 'light';
+      const next = luminance(colorToRgb(finalBg)) < 0.45 ? 'dark' : 'light';
+      html.dataset.theme = next;
+      try { localStorage.setItem('koutnet_sp_look_theme', next); } catch (_) {}
     }
   }
 
