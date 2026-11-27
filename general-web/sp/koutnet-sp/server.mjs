@@ -47,6 +47,50 @@ const reactions = (post, userId) => {
     dislikedByMe: !!userId && dislikes.includes(userId)
   };
 };
+const applyReaction = (post, kind, userId) => {
+  const likes = Array.isArray(post.likes) ? post.likes.slice() : [];
+  const dislikes = Array.isArray(post.dislikes) ? post.dislikes.slice() : [];
+  const li = likes.indexOf(userId);
+  const di = dislikes.indexOf(userId);
+  if (kind === 'like') {
+    if (li >= 0) likes.splice(li, 1);
+    else {
+      likes.push(userId);
+      if (di >= 0) dislikes.splice(di, 1);
+    }
+  } else {
+    if (di >= 0) dislikes.splice(di, 1);
+    else {
+      dislikes.push(userId);
+      if (li >= 0) likes.splice(li, 1);
+    }
+  }
+  post.likes = likes;
+  post.dislikes = dislikes;
+  return reactions(post, userId);
+};
+
+const countView = (post, key) => {
+  const viewers = post.viewers && typeof post.viewers === 'object' && !Array.isArray(post.viewers)
+    ? { ...post.viewers } : {};
+  const now = Date.now();
+  for (const [k, t] of Object.entries(viewers)) {
+    if (!Number.isFinite(Number(t)) || now - Number(t) > VIEW_TTL) delete viewers[k];
+  }
+  const counted = !Object.prototype.hasOwnProperty.call(viewers, key);
+  if (counted) {
+    viewers[key] = now;
+    const keys = Object.keys(viewers);
+    if (keys.length > VIEW_LIMIT) {
+      keys.sort((a, b) => Number(viewers[a]) - Number(viewers[b]))
+        .slice(0, keys.length - VIEW_LIMIT).forEach((k) => { delete viewers[k]; });
+    }
+    post.views = (Number(post.views) || 0) + 1;
+  }
+  post.viewers = viewers;
+  return { id: post.id, views: Number(post.views) || 0, counted };
+};
+
 const viewerKey = (req, me) => {
   if (me) return 'u:' + me.userId;
   const h = String(req.headers['x-sp-viewer'] ?? '');
@@ -424,13 +468,13 @@ createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
 
-    const postView = async (x, commentCount = 0, author = null, commentHighlight = null) => ({
+    const postView = async (x, commentCount = 0, author = null, commentHighlight = null, viewer = me) => ({
       id: x.id, text: x.text, image: x.image ? '/api/images/' + x.image : '',
       createdAt: x.createdAt, author: author ?? await authorOf(x.userId),
       commentCount, commentHighlight,
       views: Number(x.views) || 0,
-      ...reactions(x, me?.userId),
-      ownedByMe: !!me && x.userId === me.userId
+      ...reactions(x, viewer?.userId),
+      ownedByMe: !!viewer && x.userId === viewer.userId
     });
 
     if (p === '/api/posts' && req.method === 'GET') {
@@ -447,12 +491,16 @@ createServer(async (req, res) => {
           return x;
         });
       }
-      const digest = await spCommentDigest(me?.userId);
+      const rawViewer = String(url.searchParams.get('viewerId') ?? '');
+      const bridgeViewer = isBridge(req) && /^[A-Za-z0-9_-]{1,80}$/.test(rawViewer) ? rawViewer : '';
+      const viewAs = me || (bridgeViewer ? { userId: bridgeViewer } : null);
+      const digest = await spCommentDigest(viewAs?.userId);
       const highlightAuthors = new Map();
       return send(res, 200, await Promise.all(
         list.slice(0, limit).map(async (x) => postView(
           x, digest[x.id]?.count ?? 0, authors.get(x.id),
-          await enrichHighlight(digest[x.id]?.highlight, highlightAuthors)
+          await enrichHighlight(digest[x.id]?.highlight, highlightAuthors),
+          viewAs
         ))
       ));
     }
@@ -495,27 +543,9 @@ createServer(async (req, res) => {
       const list = readPosts();
       const post = list.find((x) => x.id === postId);
       if (!post) return send(res, 404, { error: 'Пост не найден.' });
-      const likes = Array.isArray(post.likes) ? post.likes.slice() : [];
-      const dislikes = Array.isArray(post.dislikes) ? post.dislikes.slice() : [];
-      const li = likes.indexOf(me.userId);
-      const di = dislikes.indexOf(me.userId);
-      if (kind === 'like') {
-        if (li >= 0) likes.splice(li, 1);
-        else {
-          likes.push(me.userId);
-          if (di >= 0) dislikes.splice(di, 1);
-        }
-      } else {
-        if (di >= 0) dislikes.splice(di, 1);
-        else {
-          dislikes.push(me.userId);
-          if (li >= 0) likes.splice(li, 1);
-        }
-      }
-      post.likes = likes;
-      post.dislikes = dislikes;
+      const out = applyReaction(post, kind, me.userId);
       writePosts(list);
-      return send(res, 200, { id: postId, ...reactions(post, me.userId) });
+      return send(res, 200, { id: postId, ...out });
     }
 
     // views are counted once per viewer per day, and only when the client actually sees the post
@@ -525,26 +555,43 @@ createServer(async (req, res) => {
       const list = readPosts();
       const post = list.find((x) => x.id === postId);
       if (!post) return send(res, 404, { error: 'Пост не найден.' });
-      const key = viewerKey(req, me);
-      const viewers = post.viewers && typeof post.viewers === 'object' && !Array.isArray(post.viewers)
-        ? { ...post.viewers } : {};
-      const now = Date.now();
-      for (const [k, t] of Object.entries(viewers)) {
-        if (!Number.isFinite(Number(t)) || now - Number(t) > VIEW_TTL) delete viewers[k];
-      }
-      const counted = !Object.prototype.hasOwnProperty.call(viewers, key);
-      if (counted) {
-        viewers[key] = now;
-        const keys = Object.keys(viewers);
-        if (keys.length > VIEW_LIMIT) {
-          keys.sort((a, b) => Number(viewers[a]) - Number(viewers[b]))
-            .slice(0, keys.length - VIEW_LIMIT).forEach((k) => { delete viewers[k]; });
-        }
-        post.views = (Number(post.views) || 0) + 1;
-      }
-      post.viewers = viewers;
+      const out = countView(post, viewerKey(req, me));
       writePosts(list);
-      return send(res, 200, { id: postId, views: Number(post.views) || 0, counted });
+      return send(res, 200, out);
+    }
+
+    // Tasks bridge: react, count a view or delete a post on behalf of a Tasks user.
+    const bp = p.match(/^\/api\/sp\/posts\/([^/]+)\/(react|view-bridge|delete-bridge)$/);
+    if (bp && req.method === 'POST' && isBridge(req)) {
+      const postId = decodeURIComponent(bp[1]);
+      const action = bp[2];
+      const b = await readBody(req);
+      const list = readPosts();
+      const post = list.find((x) => x.id === postId);
+      if (!post) return send(res, 404, { error: 'Пост не найден.' });
+      if (action === 'react') {
+        const userId = String(b.userId ?? '');
+        const kind = b.kind === 'like' || b.kind === 'dislike' ? b.kind : '';
+        if (!/^[A-Za-z0-9_-]{1,80}$/.test(userId) || !kind) return send(res, 400, { error: 'Некорректные данные.' });
+        const out = applyReaction(post, kind, userId);
+        writePosts(list);
+        return send(res, 200, { id: postId, ...out });
+      }
+      if (action === 'view-bridge') {
+        const key = String(b.viewerKey ?? '');
+        if (!/^[a-z]:[A-Za-z0-9_-]{1,80}$/.test(key)) return send(res, 400, { error: 'Некорректный зритель.' });
+        const out = countView(post, key);
+        writePosts(list);
+        return send(res, 200, out);
+      }
+      const userId = String(b.userId ?? '');
+      if (post.userId !== userId) return send(res, 403, { error: 'Можно удалить только свой пост.' });
+      writePosts(list.filter((x) => x.id !== postId));
+      if (post.image) {
+        try { unlinkSync(join(UPLOADS, post.image)); } catch (_) { /* already gone */ }
+      }
+      await bridgeRequest('/api/sp/comments/by-post/' + encodeURIComponent(postId), 'DELETE', { userId });
+      return send(res, 200, { ok: true });
     }
 
     // own posts can be removed from the profile; comments on them go away with the post
