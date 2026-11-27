@@ -24,7 +24,9 @@ koutnet.pw, www.koutnet.pw {
         }
 
         handle /api/auth/register {
-                reverse_proxy 127.0.0.1:3100
+                reverse_proxy 127.0.0.1:3100 {
+                        header_up -Cookie
+                }
         }
 
         handle_path /code/* {
@@ -52,7 +54,9 @@ tasks.koutnet.pw {
         encode gzip
 
         handle /api/* {
-                reverse_proxy 127.0.0.1:3100
+                reverse_proxy 127.0.0.1:3100 {
+                        header_up -Cookie
+                }
         }
 
         handle /data/* {
@@ -66,8 +70,15 @@ tasks.koutnet.pw {
                 file_server
         }
 
+        handle /sp-login.html {
+                header Cache-Control "no-store"
+                root * /var/www/koutnet-tasks
+                file_server
+        }
+
         handle {
                 root * /var/www/koutnet-tasks
+                header Cache-Control "no-store"
                 try_files {path} /index.html
                 file_server
         }
@@ -78,7 +89,9 @@ sp.koutnet.pw {
         encode gzip
 
         handle /api/* {
-                reverse_proxy 127.0.0.1:3101
+                reverse_proxy 127.0.0.1:3101 {
+                        header_up -Cookie
+                }
         }
 
         handle {
