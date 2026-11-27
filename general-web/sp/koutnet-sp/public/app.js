@@ -10,8 +10,52 @@ let profilePostsSeq = 0;
 let profileEditing = false;
 let md = null;
 const profileCardCache = new Map();
+const hoverCardsEnabled = !window.matchMedia('(hover: none), (pointer: coarse)').matches;
 let activeHoverCard = null;
 const LOOK_KEY = 'koutnet_sp_look';
+const LOOK_COOKIE = 'koutnet_look';
+const COOKIE_CHUNK = 700;
+const COOKIE_MAX = 3;
+
+function cookieRaw(name) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return m ? m[1] : '';
+}
+function cookieWriteRaw(name, value, maxAge = 31536000) {
+  document.cookie = name + '=' + value + '; Max-Age=' + maxAge + '; Path=/; Domain=.koutnet.pw; SameSite=Lax';
+}
+function readSharedLook() {
+  const n = parseInt(cookieRaw(LOOK_COOKIE + '_n'), 10) || 0;
+  if (n > COOKIE_MAX) {
+    for (let i = 0; i < 40; i++) cookieWriteRaw(LOOK_COOKIE + '_' + i, '', 0);
+    cookieWriteRaw(LOOK_COOKIE + '_n', '', 0);
+    return null;
+  }
+  if (!n) return null;
+  let enc = '';
+  for (let i = 0; i < n; i++) enc += cookieRaw(LOOK_COOKIE + '_' + i);
+  if (!enc) return null;
+  try { return JSON.parse(decodeURIComponent(enc)); } catch (_) { return null; }
+}
+function writeSharedLook(state) {
+  let payload = state;
+  let enc = encodeURIComponent(JSON.stringify(payload));
+  // A compressed file wallpaper can be ~350KB and will not fit into cookies.
+  // Keep the rest of the look (theme, colors, URL) synchronized instead.
+  if (payload.look && payload.look.wallpaper) {
+    const liteLook = { ...payload.look };
+    delete liteLook.wallpaper;
+    payload = { ...payload, look: liteLook };
+    enc = encodeURIComponent(JSON.stringify(payload));
+  }
+  const n = Math.max(1, Math.ceil(enc.length / COOKIE_CHUNK));
+  if (n > COOKIE_MAX) return false;
+  for (let i = 0; i < n; i++) cookieWriteRaw(LOOK_COOKIE + '_' + i, enc.slice(i * COOKIE_CHUNK, (i + 1) * COOKIE_CHUNK));
+  for (let i = n; i < 40; i++) cookieWriteRaw(LOOK_COOKIE + '_' + i, '', 0);
+  cookieWriteRaw(LOOK_COOKIE + '_n', String(n));
+  return true;
+}
+
 let look = loadLook();
 
 const $ = (sel) => document.querySelector(sel);
@@ -45,31 +89,52 @@ async function api(path, options = {}) {
   return data;
 }
 
+function themeFromBg(value) {
+  if (typeof value !== 'string') return '';
+  const s = value.trim();
+  if (!/^#?([a-f\d]{3}|[a-f\d]{6})$/i.test(s) && !/^rgba?\(([^)]+)\)$/i.test(s)) return '';
+  return luminance(colorToRgb(s)) < 0.45 ? 'dark' : 'light';
+}
+
 function initTheme() {
-  const saved = localStorage.getItem('koutnet_sp_theme');
-  const lookTheme = localStorage.getItem('koutnet_sp_look_theme');
-  if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+  const shared = readSharedLook() || {};
+  const fromBg = themeFromBg((loadLook().colors || {}).bg);
+  const saved = shared.theme || localStorage.getItem('koutnet_sp_theme');
+  const lookTheme = shared.derivedTheme || localStorage.getItem('koutnet_sp_look_theme');
+  // A manually saved theme may be stale after palette changes: the real background wins.
+  if (fromBg) document.documentElement.dataset.theme = fromBg;
+  else if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
   else if (lookTheme === 'dark' || lookTheme === 'light') document.documentElement.dataset.theme = lookTheme;
   else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
 }
 
 function loadLook() {
-  try {
-    const d = JSON.parse(localStorage.getItem(LOOK_KEY) || '{}');
-    return {
-      wallpaper: typeof d.wallpaper === 'string' ? d.wallpaper : '',
-      wallpaperUrl: typeof d.wallpaperUrl === 'string' ? d.wallpaperUrl : '',
-      colors: d.colors && typeof d.colors === 'object' ? d.colors : {},
-      auto: d.auto !== false
-    };
-  } catch (_) {
-    return { wallpaper: '', wallpaperUrl: '', colors: {}, auto: true };
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem(LOOK_KEY) || '{}'); } catch (_) {}
+  const d = { ...local };
+  const shared = readSharedLook();
+  if (shared && shared.look && typeof shared.look === 'object') {
+    for (const k of ['wallpaperUrl', 'colors', 'auto']) {
+      if (Object.prototype.hasOwnProperty.call(shared.look, k)) d[k] = shared.look[k];
+    }
+    if (shared.look.wallpaper) d.wallpaper = shared.look.wallpaper;
   }
+  return {
+    wallpaper: typeof d.wallpaper === 'string' ? d.wallpaper : '',
+    wallpaperUrl: typeof d.wallpaperUrl === 'string' ? d.wallpaperUrl : '',
+    colors: d.colors && typeof d.colors === 'object' ? d.colors : {},
+    auto: d.auto !== false
+  };
 }
 
 function saveLook() {
   try { localStorage.setItem(LOOK_KEY, JSON.stringify(look)); }
   catch (_) { toast('браузер не дал сохранить настройки.'); }
+  const shared = readSharedLook() || {};
+  shared.look = look;
+  if (!shared.theme) shared.theme = localStorage.getItem('koutnet_sp_theme') || '';
+  if (!shared.derivedTheme) shared.derivedTheme = localStorage.getItem('koutnet_sp_look_theme') || '';
+  writeSharedLook(shared);
 }
 
 function bgProxy(url) {
@@ -235,7 +300,47 @@ async function applyLook() {
   if (finalBg) {
     const next = luminance(colorToRgb(finalBg)) < 0.45 ? 'dark' : 'light';
     html.dataset.theme = next;
-    try { localStorage.setItem('koutnet_sp_look_theme', next); } catch (_) { /* ignore */ }
+    try {
+      localStorage.setItem('koutnet_sp_look_theme', next);
+      // An older manual theme must not override the palette on the next visit.
+      localStorage.removeItem('koutnet_sp_theme');
+    } catch (_) { /* ignore */ }
+    const shared = readSharedLook() || {};
+    shared.derivedTheme = next;
+    shared.theme = '';
+    shared.look = look;
+    writeSharedLook(shared);
+  }
+
+  normalizeColors();
+}
+
+// Saved palettes can end up half light and half dark. Bring every surface back
+// to one tone and force readable text instead of dark-on-dark.
+function normalizeColors() {
+  const html = document.documentElement;
+  const cs = getComputedStyle(html);
+  const lum = (key, fallback) => luminance(colorToRgb(cs.getPropertyValue('--' + key) || fallback));
+  const bgLum = lum('bg', '#ffffff');
+  let cardLum = lum('card', bgLum < 0.45 ? '#161b22' : '#f6f8fa');
+  if (Math.abs(bgLum - cardLum) > 0.3) {
+    html.style.setProperty('--card', bgLum < 0.45 ? '#161b22' : '#f6f8fa');
+    cardLum = bgLum;
+  }
+  const surface = (bgLum + cardLum) / 2;
+  const lightText = surface < 0.45;
+  if (lightText ? lum('fg', '#1f2328') < 0.65 : lum('fg', '#1f2328') > 0.35) {
+    html.style.setProperty('--fg', lightText ? '#e6edf3' : '#1f2328');
+  }
+  if (Math.abs(lum('muted', '#656d76') - surface) < 0.2) {
+    html.style.setProperty('--muted', lightText ? '#8d96a0' : '#656d76');
+  }
+  if (Math.abs(lum('border', '#d0d7de') - surface) < 0.06) {
+    html.style.setProperty('--border', lightText ? '#30363d' : '#d0d7de');
+  }
+  if (Math.abs(lum('accent', '#0969da') - surface) < 0.12) {
+    html.style.setProperty('--accent', lightText ? '#4493f8' : '#0969da');
+    html.style.setProperty('--accent-fg', lightText ? '#0d1117' : '#ffffff');
   }
 }
 
@@ -354,7 +459,9 @@ function initAppearance() {
   $('#appearanceReset').onclick = async () => {
     look = { wallpaper: '', wallpaperUrl: '', colors: {}, auto: true };
     localStorage.removeItem(LOOK_KEY);
+    localStorage.removeItem('koutnet_sp_theme');
     localStorage.removeItem('koutnet_sp_look_theme');
+    writeSharedLook({});
     await applyLook();
     fillAppearance();
     toast('настройки сброшены.');
@@ -417,6 +524,7 @@ function placeHoverCard(card, anchor) {
 
 window.addEventListener('scroll', closeHoverCard, true);
 window.addEventListener('resize', closeHoverCard);
+document.addEventListener('touchstart', closeHoverCard, { passive: true });
 
 function cachedProfileCard(username) {
   const key = String(username).toLowerCase();
@@ -481,6 +589,8 @@ function userLink(username, label, flags = {}) {
   wrap.append(name);
   if (flags.verified) wrap.append(verifiedIcon());
   if (flags.adm) wrap.append(el('span', 'adm-tag', 'adm'));
+
+  if (!hoverCardsEnabled) return wrap;
 
   let timer = null;
   let card = null;
@@ -567,7 +677,7 @@ function renderUser() {
     box.append(out);
   } else {
     const link = el('a', 'button-link', 'Войти через Tasks');
-    link.href = TASKS + '/sp-login.html?back=' + encodeURIComponent(location.origin + location.pathname);
+    link.href = TASKS + '/login?back=' + encodeURIComponent(location.origin + location.pathname);
     box.append(link);
     const reg = el('a', 'button-link', 'Регистрация');
     reg.href = 'https://koutnet.pw/koutnet-registration.html';
@@ -1617,9 +1727,50 @@ function initComposerToolbar() {
   });
 }
 
+function syncWallpaper() {
+  const layer = $('.wallpaper');
+  if (!layer) return;
+  const vv = window.visualViewport;
+  const width = vv ? vv.width : window.innerWidth;
+  const height = vv ? vv.height : window.innerHeight;
+  const left = vv ? vv.offsetLeft : 0;
+  const top = vv ? vv.offsetTop : 0;
+  layer.style.width = width + 'px';
+  layer.style.height = height + 'px';
+  layer.style.left = left + 'px';
+  layer.style.top = top + 'px';
+}
+
+function watchWallpaper() {
+  syncWallpaper();
+  window.addEventListener('resize', syncWallpaper);
+  if (window.visualViewport) {
+    visualViewport.addEventListener('resize', syncWallpaper);
+    visualViewport.addEventListener('scroll', syncWallpaper);
+  }
+}
+
+let lastSharedLook = JSON.stringify(readSharedLook() || {});
+function watchSharedLook() {
+  setInterval(() => {
+    const shared = readSharedLook() || {};
+    const cur = JSON.stringify(shared);
+    if (cur === lastSharedLook) return;
+    lastSharedLook = cur;
+    look = loadLook();
+    initTheme();
+    applyLook().then(() => {
+      const panel = $('#appearance');
+      if (panel && !panel.classList.contains('hidden')) fillAppearance();
+    });
+  }, 1500);
+}
+
 async function init() {
   initTheme();
+  watchWallpaper();
   await applyLook();
+  watchSharedLook();
   initAppearance();
   initMarkdown();
   initComposerToolbar();

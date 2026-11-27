@@ -1,20 +1,64 @@
 // Применение сохранённого оформления SP на страницах без app.js.
 (function () {
   const LOOK_KEY = 'koutnet_sp_look';
+  const LOOK_COOKIE = 'koutnet_look';
+  const COOKIE_CHUNK = 700;
+  const COOKIE_MAX = 3;
   const COLOR_KEYS = ['bg', 'fg', 'card', 'border', 'muted', 'accent', 'accent-fg'];
 
-  function loadLook() {
-    try {
-      const d = JSON.parse(localStorage.getItem(LOOK_KEY) || '{}');
-      return {
-        wallpaper: typeof d.wallpaper === 'string' ? d.wallpaper : '',
-        wallpaperUrl: typeof d.wallpaperUrl === 'string' ? d.wallpaperUrl : '',
-        colors: d.colors && typeof d.colors === 'object' ? d.colors : {},
-        auto: d.auto !== false
-      };
-    } catch (_) {
-      return { wallpaper: '', wallpaperUrl: '', colors: {}, auto: true };
+  function cookieRaw(name) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? m[1] : '';
+  }
+  function cookieWriteRaw(name, value, maxAge = 31536000) {
+    document.cookie = name + '=' + value + '; Max-Age=' + maxAge + '; Path=/; Domain=.koutnet.pw; SameSite=Lax';
+  }
+  function readSharedLook() {
+    const n = parseInt(cookieRaw(LOOK_COOKIE + '_n'), 10) || 0;
+    if (n > COOKIE_MAX) {
+      for (let i = 0; i < 40; i++) cookieWriteRaw(LOOK_COOKIE + '_' + i, '', 0);
+      cookieWriteRaw(LOOK_COOKIE + '_n', '', 0);
+      return null;
     }
+    if (!n) return null;
+    let enc = '';
+    for (let i = 0; i < n; i++) enc += cookieRaw(LOOK_COOKIE + '_' + i);
+    if (!enc) return null;
+    try { return JSON.parse(decodeURIComponent(enc)); } catch (_) { return null; }
+  }
+  function writeSharedLook(state) {
+    let payload = state;
+    let enc = encodeURIComponent(JSON.stringify(payload));
+    if (payload.look && payload.look.wallpaper) {
+      const liteLook = { ...payload.look };
+      delete liteLook.wallpaper;
+      payload = { ...payload, look: liteLook };
+      enc = encodeURIComponent(JSON.stringify(payload));
+    }
+    const n = Math.max(1, Math.ceil(enc.length / COOKIE_CHUNK));
+    if (n > COOKIE_MAX) return false;
+    for (let i = 0; i < n; i++) cookieWriteRaw(LOOK_COOKIE + '_' + i, enc.slice(i * COOKIE_CHUNK, (i + 1) * COOKIE_CHUNK));
+    for (let i = n; i < 40; i++) cookieWriteRaw(LOOK_COOKIE + '_' + i, '', 0);
+    cookieWriteRaw(LOOK_COOKIE + '_n', String(n));
+    return true;
+  }
+
+  function loadLook() {
+    let local = {};
+    try { local = JSON.parse(localStorage.getItem(LOOK_KEY) || '{}'); } catch (_) {}
+    const d = { ...local };
+    const shared = readSharedLook();
+    if (shared && shared.look && typeof shared.look === 'object') {
+      for (const k of ['wallpaper', 'wallpaperUrl', 'colors', 'auto']) {
+        if (Object.prototype.hasOwnProperty.call(shared.look, k)) d[k] = shared.look[k];
+      }
+    }
+    return {
+      wallpaper: typeof d.wallpaper === 'string' ? d.wallpaper : '',
+      wallpaperUrl: typeof d.wallpaperUrl === 'string' ? d.wallpaperUrl : '',
+      colors: d.colors && typeof d.colors === 'object' ? d.colors : {},
+      auto: d.auto !== false
+    };
   }
 
   function hexToRgb(value) {
@@ -136,13 +180,46 @@
     });
   }
 
+  function syncWallpaper() {
+    const layer = document.querySelector('.wallpaper');
+    if (!layer) return;
+    const vv = window.visualViewport;
+    const width = vv ? vv.width : window.innerWidth;
+    const height = vv ? vv.height : window.innerHeight;
+    const left = vv ? vv.offsetLeft : 0;
+    const top = vv ? vv.offsetTop : 0;
+    layer.style.width = width + 'px';
+    layer.style.height = height + 'px';
+    layer.style.left = left + 'px';
+    layer.style.top = top + 'px';
+  }
+
+  function watchWallpaper() {
+    syncWallpaper();
+    window.addEventListener('resize', syncWallpaper);
+    if (window.visualViewport) {
+      visualViewport.addEventListener('resize', syncWallpaper);
+      visualViewport.addEventListener('scroll', syncWallpaper);
+    }
+  }
+
+  function themeFromBg(value) {
+    if (typeof value !== 'string') return '';
+    const s = value.trim();
+    if (!/^#?([a-f\d]{3}|[a-f\d]{6})$/i.test(s) && !/^rgba?\(([^)]+)\)$/i.test(s)) return '';
+    return luminance(colorToRgb(s)) < 0.45 ? 'dark' : 'light';
+  }
+
   async function apply() {
     const html = document.documentElement;
     const look = loadLook();
 
-    const saved = localStorage.getItem('koutnet_sp_theme');
-    const lookTheme = localStorage.getItem('koutnet_sp_look_theme');
-    if (saved === 'dark' || saved === 'light') html.dataset.theme = saved;
+    const shared = readSharedLook() || {};
+    const fromBg = themeFromBg(look.colors && look.colors.bg);
+    const saved = shared.theme || localStorage.getItem('koutnet_sp_theme');
+    const lookTheme = shared.derivedTheme || localStorage.getItem('koutnet_sp_look_theme');
+    if (fromBg) html.dataset.theme = fromBg;
+    else if (saved === 'dark' || saved === 'light') html.dataset.theme = saved;
     else if (lookTheme === 'dark' || lookTheme === 'light') html.dataset.theme = lookTheme;
     else if (window.matchMedia('(prefers-color-scheme: dark)').matches) html.dataset.theme = 'dark';
 
@@ -153,6 +230,7 @@
     };
     html.classList.toggle('has-wallpaper', !!src);
     html.style.setProperty('--sp-bg-image', src ? 'url("' + src.replace(/"/g, '%22') + '")' : 'none');
+    watchWallpaper();
 
     let finalBg = '';
     if (src && look.auto !== false) {
@@ -180,7 +258,43 @@
     if (finalBg) {
       const next = luminance(colorToRgb(finalBg)) < 0.45 ? 'dark' : 'light';
       html.dataset.theme = next;
-      try { localStorage.setItem('koutnet_sp_look_theme', next); } catch (_) {}
+      try {
+        localStorage.setItem('koutnet_sp_look_theme', next);
+        localStorage.removeItem('koutnet_sp_theme');
+      } catch (_) {}
+      shared.derivedTheme = next;
+      shared.theme = '';
+      shared.look = look;
+      writeSharedLook(shared);
+    }
+
+    normalizeColors();
+  }
+
+  function normalizeColors() {
+    const html = document.documentElement;
+    const cs = getComputedStyle(html);
+    const lum = (key, fallback) => luminance(colorToRgb(cs.getPropertyValue('--' + key) || fallback));
+    const bgLum = lum('bg', '#ffffff');
+    let cardLum = lum('card', bgLum < 0.45 ? '#161b22' : '#f6f8fa');
+    if (Math.abs(bgLum - cardLum) > 0.3) {
+      html.style.setProperty('--card', bgLum < 0.45 ? '#161b22' : '#f6f8fa');
+      cardLum = bgLum;
+    }
+    const surface = (bgLum + cardLum) / 2;
+    const lightText = surface < 0.45;
+    if (lightText ? lum('fg', '#1f2328') < 0.65 : lum('fg', '#1f2328') > 0.35) {
+      html.style.setProperty('--fg', lightText ? '#e6edf3' : '#1f2328');
+    }
+    if (Math.abs(lum('muted', '#656d76') - surface) < 0.2) {
+      html.style.setProperty('--muted', lightText ? '#8d96a0' : '#656d76');
+    }
+    if (Math.abs(lum('border', '#d0d7de') - surface) < 0.06) {
+      html.style.setProperty('--border', lightText ? '#30363d' : '#d0d7de');
+    }
+    if (Math.abs(lum('accent', '#0969da') - surface) < 0.12) {
+      html.style.setProperty('--accent', lightText ? '#4493f8' : '#0969da');
+      html.style.setProperty('--accent-fg', lightText ? '#0d1117' : '#ffffff');
     }
   }
 

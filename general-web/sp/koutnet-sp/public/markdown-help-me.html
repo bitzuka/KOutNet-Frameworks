@@ -2,32 +2,68 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>справка о KON markdown — SP</title>
   <script>
     (function () {
       try {
         var d = document.documentElement;
-        var t = localStorage.getItem('koutnet_sp_theme');
+        function crumb(name) {
+          var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+          return m ? m[1] : '';
+        }
+        var shared = null, n = parseInt(crumb('koutnet_look_n'), 10) || 0;
+        if (n > 0 && n <= 3) {
+          var enc = '';
+          for (var j = 0; j < n; j++) enc += crumb('koutnet_look_' + j);
+          if (enc) { try { shared = JSON.parse(decodeURIComponent(enc)); } catch (_) {} }
+        }
+        var look = {};
+        try { look = JSON.parse(localStorage.getItem('koutnet_sp_look') || '{}'); } catch (_) {}
+        if (shared && shared.look && typeof shared.look === 'object') {
+          for (var sk in shared.look) {
+            if (Object.prototype.hasOwnProperty.call(shared.look, sk)) look[sk] = shared.look[sk];
+          }
+        }
+        var colors = look.colors && typeof look.colors === 'object' ? look.colors : {};
+        function themeForBg(v) {
+          if (typeof v !== 'string') return '';
+          var s = v.trim(), c = null;
+          var m = /^#?([a-f\d]{3}|[a-f\d]{6})$/i.exec(s);
+          if (m) {
+            var h = m[1];
+            if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+            c = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+          } else {
+            var r = /^rgba?\(([^)]+)\)$/i.exec(s);
+            if (r) {
+              var p = r[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+              c = [p[0] || 0, p[1] || 0, p[2] || 0];
+            }
+          }
+          return c ? ((0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 < 0.45 ? 'dark' : 'light') : '';
+        }
+        // A saved manual theme can be stale after palette changes; the actual background wins.
+        var t = themeForBg(colors.bg);
+        if (t !== 'dark' && t !== 'light' && shared) t = shared.theme;
+        if (t !== 'dark' && t !== 'light' && shared) t = shared.derivedTheme;
+        if (t !== 'dark' && t !== 'light') t = localStorage.getItem('koutnet_sp_theme');
         if (t !== 'dark' && t !== 'light') t = localStorage.getItem('koutnet_sp_look_theme');
         if (t !== 'dark' && t !== 'light') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         d.dataset.theme = t;
-        var look = {};
-        try { look = JSON.parse(localStorage.getItem('koutnet_sp_look') || '{}'); } catch (_) {}
         var src = look.wallpaper || (look.wallpaperUrl ? '/api/bg-proxy?url=' + encodeURIComponent(look.wallpaperUrl) : '');
         if (src) {
           d.classList.add('has-wallpaper');
           d.style.setProperty('--sp-bg-image', 'url("' + String(src).replace(/"/g, '%22') + '")');
         }
-        var colors = look.colors && typeof look.colors === 'object' ? look.colors : {};
         ['bg', 'fg', 'card', 'border', 'muted', 'accent', 'accent-fg'].forEach(function (k) {
           if (typeof colors[k] === 'string') d.style.setProperty('--' + k, colors[k]);
         });
       } catch (_) { /* браузер запретил localStorage */ }
     })();
   </script>
-  <link rel="stylesheet" href="/styles.css?v=comments24">
-  <script src="/look.js?v=comments24"></script>
+  <link rel="stylesheet" href="/styles.css?v=comments39">
+  <script src="/look.js?v=comments39"></script>
   <script>KoutnetLook.apply();</script>
   <style>
     .help { max-width: 900px; margin: 18px auto 0; display: grid; gap: 14px; }
@@ -47,6 +83,7 @@
   </style>
 </head>
 <body>
+  <div class="wallpaper" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><a href="/" title="SP"><img src="/brand.webp" alt="SP"><img src="/brand2.webp" alt="KOutNet"></a></div>
     <nav>
