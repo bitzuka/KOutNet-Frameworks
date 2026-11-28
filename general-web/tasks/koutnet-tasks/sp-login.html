@@ -8,49 +8,127 @@
     body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       background: #fff; color: #1f2328; display: grid; place-items: center; min-height: 100vh; }
     html[data-theme="dark"] body { background: #0d1117; color: #e6edf3; }
-    .box { border: 1px solid #d0d7de; background: #f6f8fa; border-radius: 6px; padding: 22px 26px; max-width: 420px; }
+    .box { border: 1px solid #d0d7de; background: #f6f8fa; border-radius: 6px; padding: 22px 26px; max-width: 420px; width: calc(100% - 40px); box-sizing: border-box; }
     html[data-theme="dark"] .box { border-color: #30363d; background: #161b22; }
     h1 { font-size: 20px; margin: 0 0 8px; }
     p { margin: 0 0 16px; color: #656d76; }
     html[data-theme="dark"] p { color: #8d96a0; }
     a { color: #0969da; }
     html[data-theme="dark"] a { color: #4493f8; }
-    button { border: 1px solid #d0d7de; background: #f6f8fa; color: inherit; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+    label { display: grid; gap: 4px; margin-bottom: 12px; font-size: 14px; }
+    input { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid #d0d7de;
+      border-radius: 6px; background: #fff; color: inherit; font: inherit; }
+    html[data-theme="dark"] input { border-color: #30363d; background: #0d1117; }
+    button { border: 1px solid #d0d7de; background: #f6f8fa; color: inherit; border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+    html[data-theme="dark"] button { border-color: #30363d; background: #21262d; }
+    .err { color: #cf222e; min-height: 18px; font-size: 13px; margin: 0 0 10px; }
+    html[data-theme="dark"] .err { color: #f85149; }
+    .small { font-size: 13px; margin: 14px 0 0; }
+    .hidden { display: none !important; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   </style>
 </head>
 <body>
   <div class="box">
     <h1>Вход в щитпосты</h1>
     <p id="status">Проверяем аккаунт Tasks…</p>
-    <button id="login" class="hidden">Войти в Tasks</button>
+    <form id="form" class="hidden">
+      <label>Ник
+        <input id="username" maxlength="20" autocomplete="username" autofocus>
+      </label>
+      <label>Пароль
+        <input id="password" type="password" maxlength="100" autocomplete="current-password">
+      </label>
+      <p id="error" class="err"></p>
+      <div class="row">
+        <button id="submit" type="submit">Войти</button>
+        <button id="login" type="button">Открыть Tasks</button>
+      </div>
+    </form>
+    <p class="small">Нет аккаунта? <a href="https://koutnet.pw/koutnet-registration.html">Зарегистрироваться</a></p>
   </div>
   <script>
-    (async () => {
+    (() => {
       const status = document.getElementById('status');
+      const form = document.getElementById('form');
+      const errorBox = document.getElementById('error');
+      const submit = document.getElementById('submit');
       const login = document.getElementById('login');
+      const username = document.getElementById('username');
+      const password = document.getElementById('password');
+
       if (localStorage.getItem('koutnet_sp_theme') === 'dark') document.documentElement.dataset.theme = 'dark';
-      const back = new URLSearchParams(location.search).get('back') || 'https://sp.koutnet.pw/';
-      const token = localStorage.getItem('koutnet_token');
-      if (!token) {
-        status.textContent = 'Сначала войдите в Tasks, затем вернитесь сюда.';
-        login.textContent = 'Открыть Tasks';
-        login.onclick = () => { location.href = 'https://tasks.koutnet.pw/login'; };
-        login.classList.remove('hidden');
-        return;
+
+      function safeBack(raw) {
+        try {
+          const u = new URL(raw || '', 'https://sp.koutnet.pw');
+          if (u.origin === 'https://sp.koutnet.pw') return u.href;
+        } catch (_) {}
+        return 'https://sp.koutnet.pw/';
       }
-      try {
-        const me = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
-        if (!me.ok) throw new Error('Сессия Tasks истекла');
-        const r = await fetch('/api/auth/sp-code', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
-        if (!r.ok) throw new Error('Не удалось получить код');
-        const data = await r.json();
+      const back = safeBack(new URLSearchParams(location.search).get('back'));
+
+      const jsonOrEmpty = async (r) => r.json().catch(() => ({}));
+
+      async function finish(token) {
+        localStorage.setItem('koutnet_token', token);
+        status.textContent = 'Получаем код для щитпостов…';
+        const r = await fetch('/api/auth/sp-code', {
+          method: 'POST', headers: { Authorization: 'Bearer ' + token }
+        });
+        const data = await jsonOrEmpty(r);
+        if (!r.ok || !data.code) throw new Error(data.error || 'Не удалось получить код.');
         location.href = back + (back.includes('?') ? '&' : '?') + 'code=' + encodeURIComponent(data.code);
-      } catch (e) {
-        status.textContent = e.message + '. Войдите в Tasks заново.';
-        login.textContent = 'Открыть Tasks';
-        login.onclick = () => { location.href = 'https://tasks.koutnet.pw/login'; };
-        login.classList.remove('hidden');
       }
+
+      function showForm(message) {
+        status.textContent = message;
+        form.classList.remove('hidden');
+        username.focus();
+      }
+
+      login.onclick = () => {
+        location.href = 'https://tasks.koutnet.pw/login?back=' + encodeURIComponent(back);
+      };
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        errorBox.textContent = '';
+        submit.disabled = true;
+        try {
+          const r = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username.value.trim(), password: password.value })
+          });
+          const data = await jsonOrEmpty(r);
+          if (!r.ok || !data.token) throw new Error(data.error || 'Не удалось войти.');
+          await finish(data.token);
+        } catch (err) {
+          errorBox.textContent = err.message || 'Не удалось выполнить запрос.';
+          submit.disabled = false;
+        }
+      };
+
+      (async () => {
+        const token = localStorage.getItem('koutnet_token');
+        if (!token) {
+          showForm('Войдите через аккаунт Tasks — аккаунт и активность общие.');
+          return;
+        }
+        try {
+          const me = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+          if (!me.ok) {
+            localStorage.removeItem('koutnet_token');
+            showForm('Сессия Tasks истекла. Войдите заново.');
+            return;
+          }
+          await finish(token);
+        } catch (err) {
+          errorBox.textContent = err.message || 'Не удалось выполнить запрос.';
+          showForm('Войдите через аккаунт Tasks заново.');
+        }
+      })();
     })();
   </script>
 </body>

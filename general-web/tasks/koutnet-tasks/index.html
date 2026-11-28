@@ -7,8 +7,81 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/png" href="assets/logom.png">
-<style>:root{--bg:#ffffff;--fg:#1f2328;--card:#f6f8fa;--border:#d0d7de;--muted:#656d76;--accent:#0969da;--accent-fg:#ffffff;--ok:#1a7f37;--warn:#9a6700;--bad:#cf222e}*{box-sizing:border-box}html{color-scheme:light}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}:root{--bg-img-opacity:.08}body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:url(/assets/back.jpg) center / cover no-repeat;opacity:var(--bg-img-opacity)}</style><link rel="stylesheet" href="styles-IQC4FT7Q.css" media="print" data-beasties-media="all"><noscript><link rel="stylesheet" href="styles-IQC4FT7Q.css"></noscript></head>
+  <script>
+    (function () {
+      try {
+        var d = document.documentElement;
+        function crumb(name) {
+          var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+          return m ? m[1] : '';
+        }
+        var shared = null, n = parseInt(crumb('koutnet_look_n'), 10) || 0;
+        if (n > 0 && n <= 3) {
+          var enc = '';
+          for (var j = 0; j < n; j++) enc += crumb('koutnet_look_' + j);
+          if (enc) { try { shared = JSON.parse(decodeURIComponent(enc)); } catch (_) {} }
+        }
+        var look = {};
+        try { look = JSON.parse(localStorage.getItem('kon_look') || '{}'); } catch (_) {}
+        if (shared && shared.look && typeof shared.look === 'object') {
+          for (var sk in shared.look) {
+            if (Object.prototype.hasOwnProperty.call(shared.look, sk)) look[sk] = shared.look[sk];
+          }
+        }
+        var colors = look.colors && typeof look.colors === 'object' ? look.colors : {};
+        function themeForBg(v) {
+          if (typeof v !== 'string') return '';
+          var s = v.trim(), c = null;
+          var m = /^#?([a-f\d]{3}|[a-f\d]{6})$/i.exec(s);
+          if (m) {
+            var h = m[1];
+            if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+            c = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+          } else {
+            var r = /^rgba?\(([^)]+)\)$/i.exec(s);
+            if (r) {
+              var p = r[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+              c = [p[0] || 0, p[1] || 0, p[2] || 0];
+            }
+          }
+          return c ? ((0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 < 0.45 ? 'dark' : 'light') : '';
+        }
+        // A saved manual theme may be stale after palette changes: the actual background wins.
+        var t = themeForBg(colors.bg);
+        if (t !== 'dark' && t !== 'light') t = shared && shared.theme;
+        if (t !== 'dark' && t !== 'light') t = shared && shared.derivedTheme;
+        if (t !== 'dark' && t !== 'light') t = localStorage.getItem('theme');
+        if (t !== 'dark' && t !== 'light') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        d.dataset.theme = t;
+        var src = look.wallpaper || look.wallpaperUrl;
+        if (src) {
+          d.classList.add('has-wallpaper');
+          d.style.setProperty('--kon-bg-image', 'url("' + String(src).replace(/"/g, '%22') + '")');
+        }
+        ['bg', 'fg', 'card', 'border', 'muted', 'accent', 'accent-fg'].forEach(function (k) {
+          if (typeof colors[k] === 'string') d.style.setProperty('--' + k, colors[k]);
+        });
+      } catch (_) { /* браузер запретил локальное хранилище */ }
+    })();
+  </script>
+  <style>
+    html.has-wallpaper body::before { content: ""; position: fixed; inset: 0; z-index: 0;
+      pointer-events: none; background: var(--kon-bg-image) center / cover no-repeat; opacity: .12; }
+    html.has-wallpaper main, html.has-wallpaper .foot { position: relative; z-index: 1; }
+  </style>
+  <script src="/kon-look.js"></script>
+  <script src="/vendor/markdown-it.min.js"></script>
+  <script src="/vendor/markdown-it-task-lists.min.js"></script>
+  <script src="/vendor/markdown-it-footnote.min.js"></script>
+  <script src="/vendor/markdown-it-emoji.min.js"></script>
+  <script src="/vendor/markdown-it-anchor.umd.js"></script>
+  <script src="/vendor/markdown-it-container.min.js"></script>
+  <script src="/vendor/highlight.min.js"></script>
+  <script src="/vendor/purify.min.js"></script>
+  <script src="/icons.js"></script>
+  <script src="/kon-post.js"></script>
+<style>:root{--bg:#ffffff;--fg:#1f2328;--card:#f6f8fa;--border:#d0d7de;--muted:#656d76;--accent:#0969da;--accent-fg:#ffffff;--ok:#1a7f37;--warn:#9a6700;--bad:#cf222e}*{box-sizing:border-box}html{color-scheme:light}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}:root{--bg-img-opacity:.08}body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:url(/assets/back.jpg) center / cover no-repeat;opacity:var(--bg-img-opacity)}</style><link rel="stylesheet" href="styles-XG2B33FJ.css" media="print" data-beasties-media="all"><noscript><link rel="stylesheet" href="styles-XG2B33FJ.css"></noscript></head>
 <body>
   <app-root></app-root>
-<script src="main-VZJLZ4ON.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
+<script src="main-46K6NUFU.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
 </html>
